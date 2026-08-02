@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>横瀬町トイレアクセスマップ</title>
+    <meta name="description" content="横瀬町で利用可能なトイレ情報を投稿・確認・公開していくためのWeb地図試作版">
+    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css">
+    <link rel="stylesheet" href="./style.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main-panel">地図説明へ移動</a>
+    <div class="app-shell">
+      <div id="map" aria-label="横瀬町トイレアクセスマップ"></div>
+
+      <header class="topbar" aria-label="サイト見出し">
+        <div>
+          <p class="eyebrow">YOKOZE Atlas 2026 試作版</p>
+          <h1>横瀬町トイレアクセスマップ</h1>
+        </div>
+        <div class="topbar-actions">
+          <button type="button" id="open-import" class="ghost-button">取り込み</button>
+          <button type="button" id="open-form" class="primary-button">トイレ情報を投稿する</button>
+        </div>
+      </header>
+
+      <main id="main-panel" class="info-panel" tabindex="-1">
+        <section aria-labelledby="about-title">
+          <h2 id="about-title">この地図について</h2>
+          <p>横瀬町には、再利用可能な公衆トイレデータが十分に整備されていません。本サイトは完成済みの網羅的地図ではなく、市民参加型で情報を投稿・確認・更新するための試作版です。</p>
+          <p>投稿内容はすぐに正式データになりません。確認済み情報だけをCC0データへ追加します。利用時は現地の案内や施設管理者の指示を優先してください。営業時間や利用条件は変更される可能性があります。</p>
+        </section>
+
+        <section aria-labelledby="legend-title">
+          <h2 id="legend-title">凡例</h2>
+          <div class="legend-list">
+            <span><i class="legend-dot reference"></i>参考・未確認</span>
+            <span><i class="legend-dot submitted"></i>投稿済み・確認待ち</span>
+            <span><i class="legend-dot verified"></i>確認済み・CC0公開対象</span>
+          </div>
+        </section>
+
+        <section aria-labelledby="status-title">
+          <h2 id="status-title">表示データ</h2>
+          <p id="loading-status" role="status">データを読み込んでいます。</p>
+          <p class="small-note">ウォーターパーク・シラヤマはreference表示です。座標はOpenStreetMap由来で、CC0収録対象ではありません。</p>
+        </section>
+
+        <section aria-labelledby="flow-title">
+          <h2 id="flow-title">投稿後の確認フロー</h2>
+          <ol class="flow-list">
+            <li>利用者が投稿</li>
+            <li>GitHub Issueとして登録</li>
+            <li>管理者・ゼミ生が内容を確認</li>
+            <li>重複、位置、利用条件、情報源、ライセンスを確認</li>
+            <li>必要に応じて電話・メール・現地調査</li>
+            <li>承認された情報だけをCC0用GeoJSONへ追加</li>
+            <li>Web地図へ反映</li>
+          </ol>
+        </section>
+      </main>
+
+      <aside class="map-controls" aria-label="地図設定">
+        <label class="toggle-row">
+          <input type="checkbox" id="terrain-toggle" checked>
+          <span>地形表示</span>
+        </label>
+        <button type="button" id="fit-yokoze" class="small-button">横瀬町周辺</button>
+      </aside>
+
+      <footer class="attribution-note">
+        <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a>
+        <span>OpenFreeMap</span>
+        <span>© Mapterhorn</span>
+        <span>OSM参考データ: ODbL 1.0</span>
+        <span>確認済みデータ: CC0 1.0</span>
+      </footer>
+    </div>
+
+    <dialog id="submission-dialog" class="sheet-dialog" aria-labelledby="form-title">
+      <form id="toilet-form" method="dialog" novalidate>
+        <div class="dialog-header">
+          <div>
+            <p class="eyebrow">GitHub Issueへ投稿</p>
+            <h2 id="form-title">トイレ情報を投稿する</h2>
+          </div>
+          <button type="button" class="icon-button" data-close-dialog aria-label="閉じる">×</button>
+        </div>
+
+        <p class="notice">投稿にはGitHubアカウントが必要です。Issueを作成しただけでは地図へ反映されません。</p>
+        <p class="notice">個人情報、顔写真、車両ナンバー、私有地内部の情報は投稿しないでください。</p>
+
+        <fieldset>
+          <legend>基本情報</legend>
+          <label>施設名 <span class="required">必須</span>
+            <input id="facility-name" name="facilityName" type="text" maxlength="80" required>
+          </label>
+          <label>施設種別 <span class="required">必須</span>
+            <select id="category" name="category" required>
+              <option value="">選択してください</option>
+              <option value="public_toilet">公衆トイレ</option>
+              <option value="park">公園</option>
+              <option value="station">駅</option>
+              <option value="public_facility">公共施設</option>
+              <option value="tourism">観光施設</option>
+              <option value="convenience">コンビニ</option>
+              <option value="cafe">カフェ</option>
+              <option value="restaurant">飲食店</option>
+              <option value="other">その他</option>
+            </select>
+          </label>
+          <div class="position-tools">
+            <button type="button" id="pick-position" class="secondary-button">地図クリックで位置指定</button>
+            <p id="position-help">地図上をクリックすると仮マーカーを配置できます。マーカーはドラッグで移動できます。</p>
+          </div>
+          <div class="field-grid">
+            <label>緯度 <span class="required">必須</span>
+              <input id="latitude" name="latitude" type="number" min="-90" max="90" step="0.000001" required>
+            </label>
+            <label>経度 <span class="required">必須</span>
+              <input id="longitude" name="longitude" type="number" min="-180" max="180" step="0.000001" required>
+            </label>
+          </div>
+          <p id="position-warning" class="warning" hidden></p>
+        </fieldset>
+
+        <fieldset>
+          <legend>利用条件</legend>
+          <label>一般利用の可否
+            <select id="access" name="access">
+              <option value="unknown">未確認</option>
+              <option value="public">誰でも利用可</option>
+              <option value="customers">利用者・購入者向け</option>
+              <option value="permission">声掛け・許可が必要</option>
+              <option value="restricted">制限あり</option>
+            </select>
+          </label>
+          <label>商品購入・施設利用の必要性
+            <input id="purchase-note" name="purchaseNote" type="text" maxlength="120" placeholder="未確認">
+          </label>
+          <label>職員や店員への声掛けの必要性
+            <input id="permission-note" name="permissionNote" type="text" maxlength="120" placeholder="未確認">
+          </label>
+          <label>利用可能時間
+            <input id="toilet-hours" name="toiletHours" type="text" maxlength="80" placeholder="unknown">
+          </label>
+        </fieldset>
+
+        <fieldset>
+          <legend>設備</legend>
+          <div class="field-grid">
+            <label>車いす対応
+              <select id="wheelchair" name="wheelchair">
+                <option value="unknown">未確認</option>
+                <option value="yes">あり</option>
+                <option value="limited">限定的</option>
+                <option value="no">なし</option>
+              </select>
+            </label>
+            <label>おむつ交換台
+              <select id="changing-table" name="changingTable">
+                <option value="unknown">未確認</option>
+                <option value="yes">あり</option>
+                <option value="no">なし</option>
+              </select>
+            </label>
+            <label>オストメイト設備
+              <select id="ostomy" name="ostomy">
+                <option value="unknown">未確認</option>
+                <option value="yes">あり</option>
+                <option value="no">なし</option>
+              </select>
+            </label>
+            <label>男女別・共用
+              <select id="gender" name="gender">
+                <option value="unknown">未確認</option>
+                <option value="male">男性用</option>
+                <option value="female">女性用</option>
+                <option value="unisex">共用</option>
+                <option value="mixed">男女別あり</option>
+              </select>
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>確認情報</legend>
+          <div class="field-grid">
+            <label>情報を確認した日
+              <input id="verification-date" name="verificationDate" type="date">
+            </label>
+            <label>確認方法
+              <select id="verification-method" name="verificationMethod">
+                <option value="user_submission">自分で確認</option>
+                <option value="field_survey">現地調査</option>
+                <option value="phone">電話</option>
+                <option value="email">メール</option>
+                <option value="official_web">公式Web</option>
+                <option value="unknown">未確認</option>
+              </select>
+            </label>
+          </div>
+          <label>情報源
+            <input id="source-name" name="sourceName" type="text" maxlength="160" placeholder="自分で確認、施設管理者への確認、公式ページなど">
+          </label>
+          <label>備考
+            <textarea id="notes" name="notes" maxlength="800" rows="4"></textarea>
+          </label>
+        </fieldset>
+
+        <fieldset>
+          <legend>ライセンス同意</legend>
+          <label class="checkbox-row">
+            <input id="cc0-agreement" name="cc0Agreement" type="checkbox" required>
+            <span>私は、投稿した位置・施設・設備等の情報を、自分で確認した情報として提供し、YOKOZE AtlasがCC0 1.0で公開することに同意します。他サービスからコピーした情報は投稿しません。</span>
+          </label>
+        </fieldset>
+
+        <section class="draft-tools" aria-labelledby="draft-title">
+          <h3 id="draft-title">確認用ファイルの下書き</h3>
+          <div class="inline-actions">
+            <button type="button" id="make-draft-geojson" class="small-button">GeoJSON下書きを生成</button>
+            <button type="button" id="make-draft-svg" class="small-button">SVG下書きを生成</button>
+          </div>
+          <textarea id="draft-output" rows="7" readonly aria-label="生成された下書き"></textarea>
+          <button type="button" id="copy-draft" class="secondary-button">下書きをコピー</button>
+        </section>
+
+        <p id="form-error" class="error-message" role="alert" hidden></p>
+        <div class="form-actions">
+          <button type="button" data-close-dialog class="ghost-button">閉じる</button>
+          <button type="submit" class="primary-button">GitHub Issue作成画面を開く</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="import-dialog" class="sheet-dialog" aria-labelledby="import-title">
+      <form method="dialog">
+        <div class="dialog-header">
+          <div>
+            <p class="eyebrow">管理者確認用</p>
+            <h2 id="import-title">GeoJSON / SVG 取り込みプレビュー</h2>
+          </div>
+          <button type="button" class="icon-button" data-close-dialog aria-label="閉じる">×</button>
+        </div>
+        <p class="notice">手元のGeoJSONまたはSVGを地図上で一時プレビューします。読み込んだ内容は保存されず、確認済みCC0データにも自動追加されません。</p>
+        <label>GeoJSONファイル
+          <input id="geojson-import" type="file" accept=".geojson,.json,application/geo+json,application/json">
+        </label>
+        <label>SVGファイル
+          <input id="svg-import" type="file" accept=".svg,image/svg+xml">
+        </label>
+        <p id="import-status" role="status">ファイルはまだ読み込まれていません。</p>
+        <div id="svg-preview" class="svg-preview" aria-label="SVGプレビュー"></div>
+        <div class="form-actions">
+          <button type="button" id="clear-imports" class="ghost-button">プレビューを消去</button>
+          <button type="button" data-close-dialog class="primary-button">閉じる</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
+

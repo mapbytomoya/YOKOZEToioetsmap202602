@@ -1,0 +1,53 @@
+{
+  "type": "FeatureCollection",
+  "name": "YOKOZEatlas2026_reference_toilets_v0.1.0",
+  "metadata": {
+    "description": "横瀬町トイレアクセスマップの参考表示用データ。OSM由来座標を含むためCC0公開データではない。",
+    "created": "2026-08-02",
+    "license_note": "OpenStreetMap由来の座標はODbL 1.0。ルートLICENSEのCC0対象外。"
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "id": "reference-waterpark-shirayama-toilet-2026-08-02",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          139.106441,
+          35.989121
+        ]
+      },
+      "properties": {
+        "id": "reference-waterpark-shirayama-toilet-2026-08-02",
+        "name": "ウォーターパーク・シラヤマ",
+        "category": "park",
+        "longitude": 139.106441,
+        "latitude": 35.989121,
+        "access": "unknown",
+        "access_note": "公園は誰でも無料で利用できることを公式Webで確認。トイレ固有の一般利用条件は未確認。",
+        "facility_opening_hours": "8:30-17:30",
+        "toilet_opening_hours": "unknown",
+        "fee": "unknown",
+        "wheelchair": "unknown",
+        "changing_table": "unknown",
+        "ostomy": "unknown",
+        "gender": "unknown",
+        "verification_status": "reference",
+        "verification_method": "osm_reference",
+        "verification_date": null,
+        "source_name": "横瀬町公式Webページ、横瀬町公共施設個別施設計画、OpenStreetMap候補地点",
+        "source_url": "https://www.town.yokoze.saitama.jp/shisetu-bunka/shisetsu/park/1418",
+        "additional_source_url": "https://www.town.yokoze.saitama.jp/wp-content/uploads/2024/04/kobetsushisetsukeikaku.pdf",
+        "source_license": "OpenStreetMap座標: ODbL 1.0 / 公式Web情報: 参照元",
+        "coordinate_source": "OpenStreetMap",
+        "coordinate_license": "ODbL 1.0",
+        "data_license": "ODbL 1.0 reference, not CC0",
+        "cc0_eligible": false,
+        "onsite_checked": false,
+        "entrance_position_accuracy": "unknown",
+        "notes": "公式Web情報とOSM候補地点を照合した参考情報。現地確認は未実施。正確なトイレ入口位置は未確認。OSMでは way/1079688189 と node/9896819269 がほぼ同一地点にあり、同一トイレを二重に表現している可能性がある。"
+      }
+    }
+  ]
+}
+

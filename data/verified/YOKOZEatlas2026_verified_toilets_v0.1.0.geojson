@@ -1,0 +1,11 @@
+{
+  "type": "FeatureCollection",
+  "name": "YOKOZEatlas2026_verified_toilets_v0.1.0",
+  "metadata": {
+    "description": "横瀬町トイレアクセスマップの確認済みCC0公開データ。2026-08-02時点では確認済み地点なし。",
+    "created": "2026-08-02",
+    "license": "CC0 1.0 Universal"
+  },
+  "features": []
+}
+

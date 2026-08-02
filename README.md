@@ -22,9 +22,18 @@
   - [YOKOZE Spatial Data Infrastructure(YSDI)](https://github.com/furuhashilab/YOKOZEatlas2026/issues/4)
   - [MORIGAWA 流域 Maps](https://github.com/furuhashilab/YOKOZEatlas2026/issues/3)
   - [DRONEBIRD 防災減災 Maps](https://github.com/furuhashilab/YOKOZEatlas2026/issues/5)
+  - [横瀬町トイレアクセスマップ](toilet-access-map/)
 
 
 ## 連携プロジェクト
 * 横瀬町グリーンインフラ共創拠点「森側 -MORIGAWA-」 | モリジェネ https://mori-gene.jp
 * 災害ドローン救援隊 DRONEBIRD https://dronebird.org
 * その他いろいろ
+
+## 横瀬町トイレアクセスマップ試作版
+
+`toilet-access-map/` に、横瀬町で利用可能なトイレ情報を市民参加型で投稿・確認・公開していくためのWeb地図試作版を追加しています。
+
+現時点では完成済みの網羅的地図ではありません。ウォーターパーク・シラヤマを `reference` として表示し、初期地点の座標はOpenStreetMap由来のODbL 1.0参考情報として扱います。正確な入口位置、設備、トイレ固有の利用時間は未確認です。
+
+投稿情報はGitHub Issueとして受け取り、管理者確認後にのみ `data/verified/` のCC0公開GeoJSONへ追加します。OSM参考データは `data/reference/` に分離しており、ルートCC0ライセンスの適用対象外です。

@@ -92,17 +92,39 @@ const labels = {
   field_survey: "現地調査",
   user_submission: "利用者投稿"
 };
+const wheelchairLabels = {
+  yes: "利用しやすい",
+  limited: "一部利用可・要確認",
+  no: "車いす対応なし",
+  unknown: "未確認"
+};
+const wheelchairColors = {
+  yes: "#238B5B",
+  limited: "#D29A2E",
+  no: "#B84A42",
+  unknown: "#7B8580"
+};
+const wheelchairColorExpression = [
+  "match",
+  ["get", "wheelchair_status"],
+  "yes", wheelchairColors.yes,
+  "limited", wheelchairColors.limited,
+  "no", wheelchairColors.no,
+  wheelchairColors.unknown
+];
 
 let map;
 let draftMarker;
 let pickingPosition = false;
 let currentBasemap = "osm";
+let currentWheelchairFilter = "all";
 let attributionControl;
 let referenceDataCache;
 let verifiedDataCache;
 let importedGeoJsonData;
 let importedSvgMarkerElement;
 const interactiveLayerIds = new Set();
+const pointLayerGroupIds = new Set();
 let didFitInitialReferenceBounds = false;
 let importedSvgMarker;
 let importedSvgUrl;
@@ -117,6 +139,32 @@ function toDisplay(value) {
     return value ? "はい" : "いいえ";
   }
   return labels[value] || String(value);
+}
+
+function normalizeWheelchairValue(value) {
+  const normalized = safeText(value, 40).toLowerCase();
+  if (["yes", "designated", "true", "1"].includes(normalized)) return "yes";
+  if (["limited", "partial", "partly"].includes(normalized)) return "limited";
+  if (["no", "false", "0"].includes(normalized)) return "no";
+  return "unknown";
+}
+
+function getWheelchairLabel(value) {
+  return wheelchairLabels[normalizeWheelchairValue(value)] || wheelchairLabels.unknown;
+}
+
+function withWheelchairAccessibilityProperties(feature) {
+  const properties = feature.properties || {};
+  const wheelchairStatus = normalizeWheelchairValue(properties.wheelchair || properties.wheelchair_status);
+  return {
+    ...feature,
+    properties: {
+      ...properties,
+      wheelchair: properties.wheelchair || wheelchairStatus,
+      wheelchair_status: wheelchairStatus,
+      wheelchair_label: getWheelchairLabel(wheelchairStatus)
+    }
+  };
 }
 
 function safeText(value, maxLength = 1000) {
@@ -243,10 +291,10 @@ async function loadToiletLayers() {
         loadJson(VERIFIED_DATA_URL)
       ]);
       referenceDataCache = normalizeOsmCandidates(osmCandidateData);
-      verifiedDataCache = verifiedData;
+      verifiedDataCache = normalizePointCollection(verifiedData);
     }
-    addPointLayer("reference-toilets", referenceDataCache, "#E59F3A", "OSM参考", "layer-osm-reference");
-    addPointLayer("verified-toilets", verifiedDataCache, "#2A7F73", "確認済み", "layer-verified");
+    addPointLayer("reference-toilets", referenceDataCache, "OSM参考", "layer-osm-reference");
+    addPointLayer("verified-toilets", verifiedDataCache, "確認済み", "layer-verified");
     const total = referenceDataCache.features.length + verifiedDataCache.features.length;
     setStatus(`表示中: reference ${referenceDataCache.features.length}件、verified ${verifiedDataCache.features.length}件。合計 ${total}件。`);
     fitInitialReferenceBounds();
@@ -266,7 +314,7 @@ function normalizeOsmCandidates(data) {
       const coordinates = feature.geometry.coordinates;
       const originalProperties = feature.properties || {};
       const osmId = originalProperties["@id"] || feature.id || `osm-reference-${index + 1}`;
-      return {
+      return withWheelchairAccessibilityProperties({
         ...feature,
         id: osmId,
         properties: {
@@ -287,8 +335,19 @@ function normalizeOsmCandidates(data) {
           field_surveyed: false,
           duplicate_note: "他の候補地点と重複している可能性があります。"
         }
-      };
+      });
     })
+  };
+}
+
+function normalizePointCollection(data) {
+  const sourceFeatures = data.type === "FeatureCollection" ? data.features : [];
+  return {
+    ...data,
+    type: "FeatureCollection",
+    features: sourceFeatures
+      .filter((feature) => feature?.geometry?.type === "Point" && Array.isArray(feature.geometry.coordinates))
+      .map(withWheelchairAccessibilityProperties)
   };
 }
 
@@ -323,9 +382,30 @@ function setLayerGroupVisibility(id, visible) {
   });
 }
 
-function addPointLayer(id, data, color, shortLabel, visibilityCheckboxId) {
+function getWheelchairFilterExpression() {
+  if (currentWheelchairFilter === "all") return null;
+  return ["==", ["get", "wheelchair_status"], currentWheelchairFilter];
+}
+
+function applyPointLayerFilter(id) {
+  const filter = getWheelchairFilterExpression();
+  [`${id}-circle`, `${id}-label`].forEach((layerId) => {
+    if (map.getLayer(layerId)) {
+      map.setFilter(layerId, filter);
+    }
+  });
+}
+
+function setWheelchairFilter(value) {
+  currentWheelchairFilter = wheelchairLabels[value] ? value : "all";
+  pointLayerGroupIds.forEach(applyPointLayerFilter);
+}
+
+function addPointLayer(id, data, shortLabel, visibilityCheckboxId) {
+  pointLayerGroupIds.add(id);
   if (map.getSource(id)) {
     map.getSource(id).setData(data);
+    applyPointLayerFilter(id);
     setLayerGroupVisibility(id, getLayerCheckboxState(visibilityCheckboxId));
     return;
   }
@@ -340,8 +420,15 @@ function addPointLayer(id, data, color, shortLabel, visibilityCheckboxId) {
     type: "circle",
     source: id,
     paint: {
-      "circle-color": color,
-      "circle-radius": 9,
+      "circle-color": wheelchairColorExpression,
+      "circle-radius": [
+        "match",
+        ["get", "wheelchair_status"],
+        "yes", 10,
+        "limited", 9,
+        "no", 8,
+        8
+      ],
       "circle-stroke-color": "#ffffff",
       "circle-stroke-width": 2
     }
@@ -353,7 +440,7 @@ function addPointLayer(id, data, color, shortLabel, visibilityCheckboxId) {
     source: id,
     layout: {
       "text-field": shortLabel,
-      "text-size": 12,
+      "text-size": 11,
       "text-offset": [0, 1.4],
       "text-anchor": "top"
     },
@@ -364,6 +451,7 @@ function addPointLayer(id, data, color, shortLabel, visibilityCheckboxId) {
     }
   });
 
+  applyPointLayerFilter(id);
   setLayerGroupVisibility(id, getLayerCheckboxState(visibilityCheckboxId));
 
   if (!interactiveLayerIds.has(id)) {
@@ -390,6 +478,7 @@ function createPopupContent(feature) {
   const properties = feature.properties || {};
   const coordinates = feature.geometry?.coordinates || [properties.longitude, properties.latitude];
   const status = properties.verification_status || "unknown";
+  const wheelchairStatus = normalizeWheelchairValue(properties.wheelchair_status || properties.wheelchair);
   const wrapper = document.createElement("article");
   wrapper.className = "popup-card";
 
@@ -401,6 +490,11 @@ function createPopupContent(feature) {
   pill.className = `status-pill ${status}`;
   pill.textContent = toDisplay(status);
   wrapper.append(pill);
+
+  const accessPill = document.createElement("span");
+  accessPill.className = `accessibility-pill wheelchair-${wheelchairStatus}`;
+  accessPill.textContent = `車いす対応: ${getWheelchairLabel(wheelchairStatus)}`;
+  wrapper.append(accessPill);
 
   const caution = document.createElement("p");
   caution.className = "small-note";
@@ -419,7 +513,7 @@ function createPopupContent(feature) {
     ["トイレ利用時間", toDisplay(properties.toilet_opening_hours || properties.opening_hours)],
     ["一般利用条件", toDisplay(properties.access)],
     ["利用料金", toDisplay(properties.fee)],
-    ["車いす対応", toDisplay(properties.wheelchair)],
+    ["車いす対応", getWheelchairLabel(wheelchairStatus)],
     ["おむつ交換台", toDisplay(properties.changing_table)],
     ["オストメイト設備", toDisplay(properties.ostomy)],
     ["排水方式", toDisplay(properties["toilets:disposal"])],
@@ -838,7 +932,7 @@ async function handleGeoJsonImport(file) {
       throw new Error("Point地物がありません");
     }
     importedGeoJsonData = featureCollection;
-    addPointLayer("imported-toilets", featureCollection, "#3478C0", "取込", "layer-imported-geojson");
+    addPointLayer("imported-toilets", featureCollection, "取込", "layer-imported-geojson");
     map.fitBounds(boundsFromFeatures(featureCollection.features), { padding: 80, maxZoom: 16 });
     status.textContent = `GeoJSONを${featureCollection.features.length}件プレビューしました。正式データには未追加です。`;
   } catch (error) {
@@ -854,7 +948,7 @@ function normalizeGeoJson(data) {
   const pointFeatures = collection.features.filter((feature) => feature?.geometry?.type === "Point");
   return {
     type: "FeatureCollection",
-    features: pointFeatures.map((feature, index) => ({
+    features: pointFeatures.map((feature, index) => withWheelchairAccessibilityProperties({
       ...feature,
       properties: {
         verification_status: "submitted",
@@ -876,7 +970,7 @@ function boundsFromFeatures(features) {
 
 function restoreImportedGeoJson() {
   if (!importedGeoJsonData?.features?.length) return;
-  addPointLayer("imported-toilets", importedGeoJsonData, "#3478C0", "取込", "layer-imported-geojson");
+  addPointLayer("imported-toilets", importedGeoJsonData, "取込", "layer-imported-geojson");
 }
 
 async function handleSvgImport(file) {
@@ -966,6 +1060,9 @@ function bindUi() {
   $("#open-import").addEventListener("click", () => openDialog($("#import-dialog")));
   $("#basemap-select").addEventListener("change", (event) => {
     switchBasemap(event.target.value);
+  });
+  $("#wheelchair-filter").addEventListener("change", (event) => {
+    setWheelchairFilter(event.target.value);
   });
   $("#submission-type").addEventListener("change", (event) => {
     if (event.target.value === "new") resetSubmissionContext();

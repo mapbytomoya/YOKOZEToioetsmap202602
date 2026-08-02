@@ -282,6 +282,22 @@ h3 {
   background: var(--submitted);
 }
 
+.legend-dot.wheelchair-yes {
+  background: #238b5b;
+}
+
+.legend-dot.wheelchair-limited {
+  background: #d29a2e;
+}
+
+.legend-dot.wheelchair-no {
+  background: #b84a42;
+}
+
+.legend-dot.wheelchair-unknown {
+  background: #7b8580;
+}
+
 .flow-list {
   margin: 0;
   padding-left: 22px;
@@ -621,7 +637,8 @@ button:focus-visible {
   font-size: 17px;
 }
 
-.status-pill {
+.status-pill,
+.accessibility-pill {
   border-radius: 999px;
   color: #fff;
   display: inline-block;
@@ -641,6 +658,22 @@ button:focus-visible {
 
 .status-pill.verified {
   background: var(--verified);
+}
+
+.accessibility-pill.wheelchair-yes {
+  background: #238b5b;
+}
+
+.accessibility-pill.wheelchair-limited {
+  background: #d29a2e;
+}
+
+.accessibility-pill.wheelchair-no {
+  background: #b84a42;
+}
+
+.accessibility-pill.wheelchair-unknown {
+  background: #7b8580;
 }
 
 .popup-table {

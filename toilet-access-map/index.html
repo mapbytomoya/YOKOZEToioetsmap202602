@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>横瀬町トイレアクセスマップ</title>
-    <meta name="description" content="横瀬町で利用可能なトイレ情報を投稿・確認・公開していくためのWeb地図試作版">
+    <title>横瀬町トイレ・車いすアクセスマップ</title>
+    <meta name="description" content="横瀬町で利用可能なトイレ情報を車いす対応状況で色分けし、投稿・確認・公開していくためのWeb地図試作版">
     <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css">
     <link rel="stylesheet" href="./style.css">
   </head>
@@ -16,7 +16,7 @@
       <header class="topbar" aria-label="サイト見出し">
         <div>
           <p class="eyebrow">YOKOZE Atlas 2026 試作版</p>
-          <h1>横瀬町トイレアクセスマップ</h1>
+          <h1>横瀬町トイレ・車いすアクセスマップ</h1>
         </div>
         <div class="topbar-actions">
           <button type="button" id="open-import" class="ghost-button">取り込み</button>
@@ -27,7 +27,7 @@
       <main id="main-panel" class="info-panel" tabindex="-1">
         <section aria-labelledby="about-title">
           <h2 id="about-title">この地図について</h2>
-          <p>この地図は、横瀬町で利用できるトイレ情報をみんなで集めるための試作版です。現在表示している地点の多くはOpenStreetMapから抽出した未確認の参考情報です。各地点の情報は、現地確認や施設への問い合わせを通して今後更新していきます。新しい場所や修正情報は、地図上の投稿機能から送ることができます。</p>
+          <p>この地図は、横瀬町で利用できるトイレ情報を、車いす対応の見やすさを中心に集めるための試作版です。ピンの色は車いす対応状況を表します。現在表示している地点の多くはOpenStreetMapから抽出した未確認の参考情報です。</p>
           <details>
             <summary>詳しく見る</summary>
             <p>投稿内容は自動反映されず、管理者確認後にのみCC0データへ追加します。利用時は現地の案内や施設管理者の指示を優先してください。OSM参考地点はODbL 1.0、YOKOZE Atlas確認済みデータはCC0 1.0として分けて扱います。</p>
@@ -35,13 +35,14 @@
         </section>
 
         <section aria-labelledby="legend-title">
-          <h2 id="legend-title">凡例</h2>
+          <h2 id="legend-title">車いす対応</h2>
           <div class="legend-list">
-            <span><i class="legend-dot reference"></i>OSM参考地点・未確認</span>
-            <span><i class="legend-dot submitted"></i>投稿済み・確認待ち</span>
-            <span><i class="legend-dot verified"></i>確認済み・CC0公開対象</span>
-            <span><i class="legend-dot imported"></i>手動取り込み・一時表示</span>
+            <span><i class="legend-dot wheelchair-yes"></i>利用しやすい</span>
+            <span><i class="legend-dot wheelchair-limited"></i>一部利用可・要確認</span>
+            <span><i class="legend-dot wheelchair-no"></i>車いす対応なし</span>
+            <span><i class="legend-dot wheelchair-unknown"></i>未確認</span>
           </div>
+          <p class="small-note">OSM参考地点、投稿待ち、確認済みデータはポップアップ内のデータ状態で確認できます。</p>
         </section>
 
         <section aria-labelledby="status-title">
@@ -70,6 +71,15 @@
           <select id="basemap-select">
             <option value="osm">OSM / OpenFreeMap</option>
             <option value="gsi-standard">国土地理院 標準地図</option>
+          </select>
+        </label>
+        <label class="control-label">車いす対応
+          <select id="wheelchair-filter">
+            <option value="all">すべて表示</option>
+            <option value="yes">利用しやすい</option>
+            <option value="limited">一部利用可</option>
+            <option value="no">対応なし</option>
+            <option value="unknown">未確認</option>
           </select>
         </label>
         <fieldset class="layer-fieldset">

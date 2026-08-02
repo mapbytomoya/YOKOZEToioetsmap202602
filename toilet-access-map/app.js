@@ -818,12 +818,16 @@ function buildMailtoUrl(data) {
   return `mailto:${encodeURIComponent(SUBMISSION_EMAIL)}?${params.toString()}`;
 }
 
-function buildDraftFeature(data) {
-  const slug = data.facilityName
+function getSubmissionSlug(data) {
+  return data.facilityName
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "")
     .slice(0, 36) || "submitted-toilet";
+}
+
+function buildDraftFeature(data) {
+  const slug = getSubmissionSlug(data);
   const id = `submitted-${slug}-${new Date().toISOString().slice(0, 10)}`;
 
   return {
@@ -885,6 +889,17 @@ async function copyDraft() {
   if (!text) return;
   await navigator.clipboard.writeText(text);
   showSubmissionStatus("内容をコピーしました。メール、チャット、フォームなどに貼り付けて送れます。");
+}
+
+function downloadTextFile(filename, text, type) {
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }
 
 function showSubmissionStatus(message, isError = false) {
@@ -1145,6 +1160,24 @@ function bindUi() {
     const data = validateSubmission();
     if (!data) return;
     $("#draft-output").value = buildDraftSvg(data);
+  });
+
+  $("#download-draft-geojson").addEventListener("click", () => {
+    const data = validateSubmission();
+    if (!data) return;
+    const text = JSON.stringify(buildDraftFeature(data), null, 2);
+    $("#draft-output").value = text;
+    downloadTextFile(`${getSubmissionSlug(data)}.geojson`, text, "application/geo+json");
+    showSubmissionStatus("GeoJSON下書きを保存しました。別の地図や管理フローへ引き継げます。");
+  });
+
+  $("#download-draft-svg").addEventListener("click", () => {
+    const data = validateSubmission();
+    if (!data) return;
+    const text = buildDraftSvg(data);
+    $("#draft-output").value = text;
+    downloadTextFile(`${getSubmissionSlug(data)}.svg`, text, "image/svg+xml");
+    showSubmissionStatus("SVG下書きを保存しました。確認資料として使えます。");
   });
 
   $("#copy-draft").addEventListener("click", copyDraft);

@@ -298,9 +298,15 @@ h3 {
   background: #7b8580;
 }
 
-.flow-list {
+.flow-list,
+.open-web-list {
   margin: 0;
   padding-left: 22px;
+}
+
+.open-web-list {
+  display: grid;
+  gap: 4px;
 }
 
 .map-controls {

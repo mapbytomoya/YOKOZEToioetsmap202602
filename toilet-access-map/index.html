@@ -3,20 +3,20 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>横瀬町トイレ・車いすアクセスマップ</title>
-    <meta name="description" content="横瀬町で利用可能なトイレ情報を車いす対応状況で色分けし、投稿・確認・公開していくためのWeb地図試作版">
+    <title>横瀬町オープントイレアクセスマップ</title>
+    <meta name="description" content="横瀬町で利用可能なトイレ情報を、ログイン不要の投稿導線とオープンなGeoJSON運用で育てるWeb地図試作版">
     <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css">
     <link rel="stylesheet" href="./style.css">
   </head>
   <body>
     <a class="skip-link" href="#main-panel">地図説明へ移動</a>
     <div class="app-shell">
-      <div id="map" aria-label="横瀬町トイレアクセスマップ"></div>
+      <div id="map" aria-label="横瀬町オープントイレアクセスマップ"></div>
 
       <header class="topbar" aria-label="サイト見出し">
         <div>
           <p class="eyebrow">YOKOZE Atlas 2026 試作版</p>
-          <h1>横瀬町トイレ・車いすアクセスマップ</h1>
+          <h1>横瀬町オープントイレアクセスマップ</h1>
         </div>
         <div class="topbar-actions">
           <button type="button" id="open-import" class="ghost-button">取り込み</button>
@@ -27,7 +27,7 @@
       <main id="main-panel" class="info-panel" tabindex="-1">
         <section aria-labelledby="about-title">
           <h2 id="about-title">この地図について</h2>
-          <p>この地図は、横瀬町で利用できるトイレ情報を、車いす対応の見やすさを中心に集めるための試作版です。ピンの色は車いす対応状況を表します。現在表示している地点の多くはOpenStreetMapから抽出した未確認の参考情報です。</p>
+          <p>この地図は、横瀬町で利用できるトイレ情報を、誰でも見られて、投稿できて、標準形式で引き継げるように育てるための試作版です。ピンの色は車いす対応状況を表します。現在表示している地点の多くはOpenStreetMapから抽出した未確認の参考情報です。</p>
           <details>
             <summary>詳しく見る</summary>
             <p>投稿内容は自動反映されず、管理者確認後にのみCC0データへ追加します。利用時は現地の案内や施設管理者の指示を優先してください。OSM参考地点はODbL 1.0、YOKOZE Atlas確認済みデータはCC0 1.0として分けて扱います。</p>
@@ -49,6 +49,16 @@
           <h2 id="status-title">表示データ</h2>
           <p id="loading-status" role="status">データを読み込んでいます。</p>
           <p class="small-note">ウォーターパーク・シラヤマはreference表示です。座標はOpenStreetMap由来で、CC0収録対象ではありません。</p>
+        </section>
+
+        <section aria-labelledby="open-web-title">
+          <h2 id="open-web-title">閉じない運用</h2>
+          <ul class="open-web-list">
+            <li>閲覧と投稿文作成はログイン不要</li>
+            <li>投稿下書きはGeoJSON・SVG・テキストで保存可能</li>
+            <li>GitHub、メール、共有先は後から置き換え可能</li>
+            <li>確認済みデータと参考データのライセンスを分離</li>
+          </ul>
         </section>
 
         <section aria-labelledby="flow-title">
@@ -291,6 +301,8 @@
             <button type="button" id="make-submission-text" class="small-button">投稿文を生成</button>
             <button type="button" id="make-draft-geojson" class="small-button">GeoJSON下書きを生成</button>
             <button type="button" id="make-draft-svg" class="small-button">SVG下書きを生成</button>
+            <button type="button" id="download-draft-geojson" class="small-button">GeoJSONを保存</button>
+            <button type="button" id="download-draft-svg" class="small-button">SVGを保存</button>
           </div>
           <textarea id="draft-output" rows="7" readonly aria-label="生成された下書き"></textarea>
           <button type="button" id="copy-draft" class="secondary-button">内容をコピー</button>

@@ -1,6 +1,7 @@
 const OSM_CANDIDATES_DATA_URL = "../data/temp/TomoyaAiko/YOKOZEatlas2026_temp_toilets_v0.1.0_TA.geojson";
 const VERIFIED_DATA_URL = "../data/verified/YOKOZEatlas2026_verified_toilets_v0.1.0.geojson";
 const ISSUE_URL = "https://github.com/furuhashilab/YOKOZEatlas2026/issues/new";
+const SUBMISSION_EMAIL = "";
 const YOKOZE_BOUNDS = [
   [139.03, 35.94],
   [139.19, 36.04]
@@ -692,14 +693,35 @@ ${osmBlock}## 利用条件
 - Google Maps等からの転用がないか確認する`;
 }
 
+function buildSubmissionTitle(data) {
+  const titlePrefix = data.submissionType === "edit_existing" ? "トイレ情報確認・修正" : "トイレ情報投稿";
+  return `横瀬町${titlePrefix}: ${data.facilityName}`;
+}
+
+function buildSubmissionText(data) {
+  return `${buildSubmissionTitle(data)}
+
+${buildIssueBody(data)}`;
+}
+
 function buildIssueUrl(data) {
-  const titlePrefix = data.submissionType === "edit_existing" ? "[トイレ情報確認・修正]" : "[トイレ情報投稿]";
   const params = new URLSearchParams({
-    title: `${titlePrefix} ${data.facilityName}`,
+    title: buildSubmissionTitle(data),
     body: buildIssueBody(data),
     labels: "data"
   });
   return `${ISSUE_URL}?${params.toString()}`;
+}
+
+function buildMailtoUrl(data) {
+  const params = new URLSearchParams({
+    subject: buildSubmissionTitle(data),
+    body: `${buildSubmissionText(data)}
+
+---
+送信前に、宛先が横瀬町トイレアクセスマップの管理者・担当者になっているか確認してください。`
+  });
+  return `mailto:${encodeURIComponent(SUBMISSION_EMAIL)}?${params.toString()}`;
 }
 
 function buildDraftFeature(data) {
@@ -768,6 +790,42 @@ async function copyDraft() {
   const text = $("#draft-output").value;
   if (!text) return;
   await navigator.clipboard.writeText(text);
+  showSubmissionStatus("内容をコピーしました。メール、チャット、フォームなどに貼り付けて送れます。");
+}
+
+function showSubmissionStatus(message, isError = false) {
+  const status = $("#submission-status");
+  status.textContent = message;
+  status.hidden = false;
+  status.classList.toggle("error-message", isError);
+}
+
+async function copyTextToClipboard(text) {
+  await navigator.clipboard.writeText(text);
+}
+
+async function shareOrCopySubmission(data) {
+  const title = buildSubmissionTitle(data);
+  const text = buildSubmissionText(data);
+  $("#draft-output").value = text;
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title, text });
+      showSubmissionStatus("共有メニューを開きました。送信先を選んで投稿してください。");
+      return;
+    } catch (error) {
+      if (error.name === "AbortError") return;
+      console.warn(error);
+    }
+  }
+
+  try {
+    await copyTextToClipboard(text);
+    showSubmissionStatus("投稿文をコピーしました。メール、チャット、フォームなどに貼り付けて送れます。");
+  } catch (error) {
+    showSubmissionStatus("投稿文を下書き欄に生成しました。内容を選択してコピーしてください。", true);
+  }
 }
 
 async function handleGeoJsonImport(file) {
@@ -956,7 +1014,28 @@ function bindUi() {
     event.preventDefault();
     const data = validateSubmission();
     if (!data) return;
+    shareOrCopySubmission(data);
+  });
+
+  $("#email-submission").addEventListener("click", () => {
+    const data = validateSubmission();
+    if (!data) return;
+    $("#draft-output").value = buildSubmissionText(data);
+    window.location.href = buildMailtoUrl(data);
+    showSubmissionStatus("メールアプリを開きました。送信前に宛先を確認してください。");
+  });
+
+  $("#open-github-issue").addEventListener("click", () => {
+    const data = validateSubmission();
+    if (!data) return;
     window.open(buildIssueUrl(data), "_blank", "noopener");
+  });
+
+  $("#make-submission-text").addEventListener("click", () => {
+    const data = validateSubmission();
+    if (!data) return;
+    $("#draft-output").value = buildSubmissionText(data);
+    showSubmissionStatus("投稿文を生成しました。共有・コピー・メール送信に使えます。");
   });
 
   $("#make-draft-geojson").addEventListener("click", () => {

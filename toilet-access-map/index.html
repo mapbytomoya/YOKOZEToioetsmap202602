@@ -53,8 +53,9 @@
         <section aria-labelledby="flow-title">
           <h2 id="flow-title">投稿後の確認フロー</h2>
           <ol class="flow-list">
-            <li>利用者が投稿</li>
-            <li>GitHub Issueとして登録</li>
+            <li>利用者がフォームに入力</li>
+            <li>投稿内容を共有・メール・コピーで送信</li>
+            <li>管理者側でGitHub Issue等に登録</li>
             <li>管理者・ゼミ生が内容を確認</li>
             <li>重複、位置、利用条件、情報源、ライセンスを確認</li>
             <li>必要に応じて電話・メール・現地調査</li>
@@ -106,13 +107,13 @@
       <form id="toilet-form" method="dialog" novalidate>
         <div class="dialog-header">
           <div>
-            <p class="eyebrow">GitHub Issueへ投稿</p>
+            <p class="eyebrow">GitHubアカウント不要</p>
             <h2 id="form-title">トイレ情報を投稿する</h2>
           </div>
           <button type="button" class="icon-button" data-close-dialog aria-label="閉じる">×</button>
         </div>
 
-        <p class="notice">投稿にはGitHubアカウントが必要です。Issueを作成しただけでは地図へ反映されません。</p>
+        <p class="notice">入力した内容から投稿文を作成します。スマートフォンの共有、メール、コピーで送ることができます。</p>
         <p class="notice">個人情報、顔写真、車両ナンバー、私有地内部の情報は投稿しないでください。</p>
 
         <fieldset>
@@ -275,19 +276,23 @@
         </fieldset>
 
         <section class="draft-tools" aria-labelledby="draft-title">
-          <h3 id="draft-title">確認用ファイルの下書き</h3>
+          <h3 id="draft-title">投稿文・確認用ファイルの下書き</h3>
           <div class="inline-actions">
+            <button type="button" id="make-submission-text" class="small-button">投稿文を生成</button>
             <button type="button" id="make-draft-geojson" class="small-button">GeoJSON下書きを生成</button>
             <button type="button" id="make-draft-svg" class="small-button">SVG下書きを生成</button>
           </div>
           <textarea id="draft-output" rows="7" readonly aria-label="生成された下書き"></textarea>
-          <button type="button" id="copy-draft" class="secondary-button">下書きをコピー</button>
+          <button type="button" id="copy-draft" class="secondary-button">内容をコピー</button>
         </section>
 
         <p id="form-error" class="error-message" role="alert" hidden></p>
+        <p id="submission-status" class="success-message" role="status" hidden></p>
         <div class="form-actions">
           <button type="button" data-close-dialog class="ghost-button">閉じる</button>
-          <button type="submit" class="primary-button">GitHub Issue作成画面を開く</button>
+          <button type="submit" class="primary-button">共有・コピーする</button>
+          <button type="button" id="email-submission" class="secondary-button">メールで送る</button>
+          <button type="button" id="open-github-issue" class="ghost-button">管理者向けGitHub Issue</button>
         </div>
       </form>
     </dialog>

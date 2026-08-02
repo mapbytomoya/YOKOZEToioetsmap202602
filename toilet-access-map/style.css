@@ -507,13 +507,26 @@ button:focus-visible {
 }
 
 .warning,
-.error-message {
+.error-message,
+.success-message {
   background: #fff4ef;
   border: 1px solid #f0b8a8;
   border-radius: 6px;
   color: var(--danger);
   margin: 0;
   padding: 9px 10px;
+}
+
+.success-message {
+  background: #eff8f1;
+  border-color: #b6d8c3;
+  color: #2d513f;
+}
+
+.success-message.error-message {
+  background: #fff4ef;
+  border-color: #f0b8a8;
+  color: var(--danger);
 }
 
 .reference-context {

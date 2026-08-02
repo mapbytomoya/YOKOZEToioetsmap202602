@@ -11,6 +11,54 @@ const YOKOZE_VIEW = {
   bearing: -18,
   pitch: 48
 };
+const BASEMAPS = {
+  osm: {
+    label: "OSM / OpenFreeMap",
+    credit: "背景地図: OpenFreeMap",
+    style: () => "https://tiles.openfreemap.org/styles/liberty",
+    customAttribution: [
+      "<a href=\"https://openfreemap.org/\" target=\"_blank\" rel=\"noopener\">OpenFreeMap</a>"
+    ]
+  },
+  "gsi-standard": {
+    label: "国土地理院 標準地図",
+    credit: "背景地図: 国土地理院 標準地図",
+    style: () => ({
+      version: 8,
+      sources: {
+        "gsi-standard": {
+          type: "raster",
+          tiles: ["https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png"],
+          tileSize: 256,
+          attribution: "<a href=\"https://maps.gsi.go.jp/development/ichiran.html\" target=\"_blank\" rel=\"noopener\">国土地理院</a>"
+        }
+      },
+      layers: [
+        {
+          id: "gsi-background",
+          type: "background",
+          paint: {
+            "background-color": "#eef2ed"
+          }
+        },
+        {
+          id: "gsi-standard",
+          type: "raster",
+          source: "gsi-standard",
+          minzoom: 5,
+          maxzoom: 18
+        }
+      ]
+    }),
+    customAttribution: []
+  }
+};
+const DATA_ATTRIBUTION = [
+  "<a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">© OpenStreetMap contributors</a>",
+  "<a href=\"https://mapterhorn.com/attribution\" target=\"_blank\" rel=\"noopener\">© Mapterhorn</a>",
+  "OSM参考データ: ODbL 1.0",
+  "YOKOZE Atlas確認済みデータ: CC0 1.0"
+];
 
 const labels = {
   public_toilet: "公衆トイレ",
@@ -48,6 +96,12 @@ const labels = {
 let map;
 let draftMarker;
 let pickingPosition = false;
+let currentBasemap = "osm";
+let attributionControl;
+let referenceDataCache;
+let verifiedDataCache;
+let importedGeoJsonData;
+const interactiveLayerIds = new Set();
 let importedSvgMarker;
 let importedSvgUrl;
 
@@ -105,7 +159,7 @@ function initMap() {
 
   map = new maplibregl.Map({
     container: "map",
-    style: "https://tiles.openfreemap.org/styles/liberty",
+    style: BASEMAPS[currentBasemap].style(),
     center: YOKOZE_VIEW.center,
     zoom: YOKOZE_VIEW.zoom,
     bearing: YOKOZE_VIEW.bearing,
@@ -116,20 +170,10 @@ function initMap() {
 
   map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
   map.addControl(new maplibregl.ScaleControl({ unit: "metric" }), "bottom-right");
-  map.addControl(new maplibregl.AttributionControl({
-    compact: true,
-    customAttribution: [
-      "<a href=\"https://openfreemap.org/\" target=\"_blank\" rel=\"noopener\">OpenFreeMap</a>",
-      "<a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">© OpenStreetMap contributors</a>",
-      "<a href=\"https://mapterhorn.com/attribution\" target=\"_blank\" rel=\"noopener\">© Mapterhorn</a>",
-      "OSM参考データ: ODbL 1.0",
-      "YOKOZE Atlas確認済みデータ: CC0 1.0"
-    ]
-  }), "bottom-right");
+  updateAttributionControl();
 
   map.on("load", async () => {
-    addTerrain();
-    await loadToiletLayers();
+    await restoreOverlays();
   });
 
   map.on("click", (event) => {
@@ -145,6 +189,42 @@ function initMap() {
       console.warn(event.error);
     }
   });
+}
+
+function updateAttributionControl() {
+  if (attributionControl) {
+    map.removeControl(attributionControl);
+  }
+  attributionControl = new maplibregl.AttributionControl({
+    compact: true,
+    customAttribution: [
+      ...BASEMAPS[currentBasemap].customAttribution,
+      ...DATA_ATTRIBUTION
+    ]
+  });
+  map.addControl(attributionControl, "bottom-right");
+  $("#basemap-credit").textContent = BASEMAPS[currentBasemap].credit;
+}
+
+async function switchBasemap(nextBasemap) {
+  if (!BASEMAPS[nextBasemap] || nextBasemap === currentBasemap) return;
+  currentBasemap = nextBasemap;
+  $("#basemap-credit").textContent = BASEMAPS[currentBasemap].credit;
+  setStatus(`背景地図を${BASEMAPS[currentBasemap].label}へ切り替えています。`);
+  map.setStyle(BASEMAPS[currentBasemap].style());
+  map.once("style.load", async () => {
+    updateAttributionControl();
+    await restoreOverlays();
+    setStatus(`背景地図: ${BASEMAPS[currentBasemap].label}。reference ${referenceDataCache?.features.length || 0}件、verified ${verifiedDataCache?.features.length || 0}件。`);
+  });
+}
+
+async function restoreOverlays() {
+  if ($("#terrain-toggle").checked) {
+    addTerrain();
+  }
+  await loadToiletLayers();
+  restoreImportedGeoJson();
 }
 
 function addTerrain() {
@@ -170,14 +250,16 @@ async function loadJson(url) {
 
 async function loadToiletLayers() {
   try {
-    const [referenceData, verifiedData] = await Promise.all([
-      loadJson(REFERENCE_DATA_URL),
-      loadJson(VERIFIED_DATA_URL)
-    ]);
-    addPointLayer("reference-toilets", referenceData, "#b65f00", "参考");
-    addPointLayer("verified-toilets", verifiedData, "#0b7d62", "確認済み");
-    const total = referenceData.features.length + verifiedData.features.length;
-    setStatus(`表示中: reference ${referenceData.features.length}件、verified ${verifiedData.features.length}件。合計 ${total}件。`);
+    if (!referenceDataCache || !verifiedDataCache) {
+      [referenceDataCache, verifiedDataCache] = await Promise.all([
+        loadJson(REFERENCE_DATA_URL),
+        loadJson(VERIFIED_DATA_URL)
+      ]);
+    }
+    addPointLayer("reference-toilets", referenceDataCache, "#b65f00", "参考");
+    addPointLayer("verified-toilets", verifiedDataCache, "#0b7d62", "確認済み");
+    const total = referenceDataCache.features.length + verifiedDataCache.features.length;
+    setStatus(`表示中: reference ${referenceDataCache.features.length}件、verified ${verifiedDataCache.features.length}件。合計 ${total}件。`);
   } catch (error) {
     setStatus("データ取得エラー: GeoJSONを読み込めませんでした。", true);
     console.error(error);
@@ -224,21 +306,24 @@ function addPointLayer(id, data, color, shortLabel) {
     }
   });
 
-  map.on("click", `${id}-circle`, (event) => {
-    const feature = event.features[0];
-    const coordinates = feature.geometry.coordinates.slice();
-    new maplibregl.Popup()
-      .setLngLat(coordinates)
-      .setDOMContent(createPopupContent(feature.properties))
-      .addTo(map);
-  });
+  if (!interactiveLayerIds.has(id)) {
+    interactiveLayerIds.add(id);
+    map.on("click", `${id}-circle`, (event) => {
+      const feature = event.features[0];
+      const coordinates = feature.geometry.coordinates.slice();
+      new maplibregl.Popup()
+        .setLngLat(coordinates)
+        .setDOMContent(createPopupContent(feature.properties))
+        .addTo(map);
+    });
 
-  map.on("mouseenter", `${id}-circle`, () => {
-    map.getCanvas().style.cursor = "pointer";
-  });
-  map.on("mouseleave", `${id}-circle`, () => {
-    map.getCanvas().style.cursor = "";
-  });
+    map.on("mouseenter", `${id}-circle`, () => {
+      map.getCanvas().style.cursor = "pointer";
+    });
+    map.on("mouseleave", `${id}-circle`, () => {
+      map.getCanvas().style.cursor = "";
+    });
+  }
 }
 
 function createPopupContent(properties) {
@@ -516,6 +601,7 @@ async function handleGeoJsonImport(file) {
     if (!featureCollection.features.length) {
       throw new Error("Point地物がありません");
     }
+    importedGeoJsonData = featureCollection;
     addPointLayer("imported-toilets", featureCollection, "#1e6ea7", "取込");
     map.fitBounds(boundsFromFeatures(featureCollection.features), { padding: 80, maxZoom: 16 });
     status.textContent = `GeoJSONを${featureCollection.features.length}件プレビューしました。正式データには未追加です。`;
@@ -550,6 +636,11 @@ function boundsFromFeatures(features) {
   const bounds = new maplibregl.LngLatBounds();
   features.forEach((feature) => bounds.extend(feature.geometry.coordinates));
   return bounds;
+}
+
+function restoreImportedGeoJson() {
+  if (!importedGeoJsonData?.features?.length) return;
+  addPointLayer("imported-toilets", importedGeoJsonData, "#1e6ea7", "取込");
 }
 
 async function handleSvgImport(file) {
@@ -615,6 +706,7 @@ function clearImports() {
   importedSvgMarker = null;
   if (importedSvgUrl) URL.revokeObjectURL(importedSvgUrl);
   importedSvgUrl = null;
+  importedGeoJsonData = null;
   $("#svg-preview").replaceChildren();
   $("#geojson-import").value = "";
   $("#svg-import").value = "";
@@ -624,6 +716,9 @@ function clearImports() {
 function bindUi() {
   $("#open-form").addEventListener("click", () => openDialog($("#submission-dialog")));
   $("#open-import").addEventListener("click", () => openDialog($("#import-dialog")));
+  $("#basemap-select").addEventListener("change", (event) => {
+    switchBasemap(event.target.value);
+  });
   document.querySelectorAll("[data-close-dialog]").forEach((button) => {
     button.addEventListener("click", () => closeDialog(button));
   });

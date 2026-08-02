@@ -61,6 +61,12 @@
       </main>
 
       <aside class="map-controls" aria-label="地図設定">
+        <label class="control-label">背景地図
+          <select id="basemap-select">
+            <option value="osm">OSM / OpenFreeMap</option>
+            <option value="gsi-standard">国土地理院 標準地図</option>
+          </select>
+        </label>
         <label class="toggle-row">
           <input type="checkbox" id="terrain-toggle" checked>
           <span>地形表示</span>
@@ -70,7 +76,7 @@
 
       <footer class="attribution-note">
         <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a>
-        <span>OpenFreeMap</span>
+        <span id="basemap-credit">背景地図: OpenFreeMap</span>
         <span>© Mapterhorn</span>
         <span>OSM参考データ: ODbL 1.0</span>
         <span>確認済みデータ: CC0 1.0</span>
@@ -263,4 +269,3 @@
     <script src="./app.js"></script>
   </body>
 </html>
-

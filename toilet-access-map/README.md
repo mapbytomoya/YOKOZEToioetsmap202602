@@ -43,6 +43,15 @@ https://furuhashilab.github.io/YOKOZEatlas2026/toilet-access-map/
 
 投稿フォームの入力内容から、管理者確認用の下書きGeoJSONとSVGも生成できます。
 
+## 背景地図
+
+地図設定パネルから、背景地図を選択できます。
+
+- OSM / OpenFreeMap
+- 国土地理院 標準地図
+
+国土地理院タイルは、地理院タイル一覧ページの出典表記に従い、サイト内およびMapLibreの帰属表示に国土地理院へのリンクを表示します。
+
 ## 現在の制約と今後の課題
 
 - 確認済みCC0トイレデータは0件です。
@@ -50,4 +59,3 @@ https://furuhashilab.github.io/YOKOZEatlas2026/toilet-access-map/
 - 投稿にはGitHubアカウントが必要です。
 - GitHub Issue作成後も、確認済みデータとして承認されるまで地図には反映されません。
 - 横瀬町または施設管理者への問い合わせ、現地調査、CC0公開可否の確認が必要です。
-

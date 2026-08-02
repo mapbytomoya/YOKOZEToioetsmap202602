@@ -259,9 +259,22 @@ h3 {
   box-shadow: var(--shadow);
   display: grid;
   gap: 8px;
+  min-width: 190px;
   padding: 10px;
   right: 18px;
   top: 104px;
+}
+
+.control-label {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.control-label select {
+  background: #fff;
+  font-size: 14px;
+  min-height: 36px;
+  padding: 6px 8px;
 }
 
 .toggle-row,
@@ -553,4 +566,3 @@ button:focus-visible {
     gap: 4px 8px;
   }
 }
-

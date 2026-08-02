@@ -1,4 +1,4 @@
-const REFERENCE_DATA_URL = "../data/reference/YOKOZEatlas2026_reference_toilets_v0.1.0.geojson";
+const OSM_CANDIDATES_DATA_URL = "../data/temp/TomoyaAiko/YOKOZEatlas2026_temp_toilets_v0.1.0_TA.geojson";
 const VERIFIED_DATA_URL = "../data/verified/YOKOZEatlas2026_verified_toilets_v0.1.0.geojson";
 const ISSUE_URL = "https://github.com/furuhashilab/YOKOZEatlas2026/issues/new";
 const YOKOZE_BOUNDS = [
@@ -8,8 +8,8 @@ const YOKOZE_BOUNDS = [
 const YOKOZE_VIEW = {
   center: [139.106, 35.986],
   zoom: 12.2,
-  bearing: -18,
-  pitch: 48
+  bearing: 0,
+  pitch: 0
 };
 const BASEMAPS = {
   osm: {
@@ -55,8 +55,7 @@ const BASEMAPS = {
 };
 const DATA_ATTRIBUTION = [
   "<a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">© OpenStreetMap contributors</a>",
-  "<a href=\"https://mapterhorn.com/attribution\" target=\"_blank\" rel=\"noopener\">© Mapterhorn</a>",
-  "OSM参考データ: ODbL 1.0",
+  "OSMトイレ参考候補データ: ODbL 1.0",
   "YOKOZE Atlas確認済みデータ: CC0 1.0"
 ];
 
@@ -101,7 +100,9 @@ let attributionControl;
 let referenceDataCache;
 let verifiedDataCache;
 let importedGeoJsonData;
+let importedSvgMarkerElement;
 const interactiveLayerIds = new Set();
+let didFitInitialReferenceBounds = false;
 let importedSvgMarker;
 let importedSvgUrl;
 
@@ -168,7 +169,7 @@ function initMap() {
     attributionControl: false
   });
 
-  map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
+  map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), "top-right");
   map.addControl(new maplibregl.ScaleControl({ unit: "metric" }), "bottom-right");
   updateAttributionControl();
 
@@ -220,24 +221,8 @@ async function switchBasemap(nextBasemap) {
 }
 
 async function restoreOverlays() {
-  if ($("#terrain-toggle").checked) {
-    addTerrain();
-  }
   await loadToiletLayers();
   restoreImportedGeoJson();
-}
-
-function addTerrain() {
-  if (!map.getSource("mapterhorn-dem")) {
-    map.addSource("mapterhorn-dem", {
-      type: "raster-dem",
-      tiles: ["https://tiles.mapterhorn.com/{z}/{x}/{y}.webp"],
-      encoding: "terrarium",
-      tileSize: 512,
-      attribution: "<a href=\"https://mapterhorn.com/attribution\" target=\"_blank\" rel=\"noopener\">© Mapterhorn</a>"
-    });
-  }
-  map.setTerrain({ source: "mapterhorn-dem", exaggeration: 1.15 });
 }
 
 async function loadJson(url) {
@@ -249,26 +234,98 @@ async function loadJson(url) {
 }
 
 async function loadToiletLayers() {
+  setStatus("トイレ候補データを読み込んでいます。");
   try {
     if (!referenceDataCache || !verifiedDataCache) {
-      [referenceDataCache, verifiedDataCache] = await Promise.all([
-        loadJson(REFERENCE_DATA_URL),
+      const [osmCandidateData, verifiedData] = await Promise.all([
+        loadJson(OSM_CANDIDATES_DATA_URL),
         loadJson(VERIFIED_DATA_URL)
       ]);
+      referenceDataCache = normalizeOsmCandidates(osmCandidateData);
+      verifiedDataCache = verifiedData;
     }
-    addPointLayer("reference-toilets", referenceDataCache, "#b65f00", "参考");
-    addPointLayer("verified-toilets", verifiedDataCache, "#0b7d62", "確認済み");
+    addPointLayer("reference-toilets", referenceDataCache, "#E59F3A", "OSM参考", "layer-osm-reference");
+    addPointLayer("verified-toilets", verifiedDataCache, "#2A7F73", "確認済み", "layer-verified");
     const total = referenceDataCache.features.length + verifiedDataCache.features.length;
     setStatus(`表示中: reference ${referenceDataCache.features.length}件、verified ${verifiedDataCache.features.length}件。合計 ${total}件。`);
+    fitInitialReferenceBounds();
   } catch (error) {
-    setStatus("データ取得エラー: GeoJSONを読み込めませんでした。", true);
+    setStatus("トイレ候補データを読み込めませんでした。", true);
+    map.easeTo(YOKOZE_VIEW);
     console.error(error);
   }
 }
 
-function addPointLayer(id, data, color, shortLabel) {
+function normalizeOsmCandidates(data) {
+  const sourceFeatures = data.type === "FeatureCollection" ? data.features : [];
+  const pointFeatures = sourceFeatures.filter((feature) => feature?.geometry?.type === "Point" && Array.isArray(feature.geometry.coordinates));
+  return {
+    type: "FeatureCollection",
+    features: pointFeatures.map((feature, index) => {
+      const coordinates = feature.geometry.coordinates;
+      const originalProperties = feature.properties || {};
+      const osmId = originalProperties["@id"] || feature.id || `osm-reference-${index + 1}`;
+      return {
+        ...feature,
+        id: osmId,
+        properties: {
+          ...originalProperties,
+          id: osmId,
+          osm_id: osmId,
+          name: originalProperties.name || "OSM参考地点",
+          category: "public_toilet",
+          longitude: Number(coordinates[0]),
+          latitude: Number(coordinates[1]),
+          verification_status: "reference",
+          verification_method: "osm_reference",
+          source_name: "OpenStreetMap",
+          source_license: "ODbL-1.0",
+          data_license: "ODbL-1.0",
+          coordinate_source: "OpenStreetMap",
+          cc0_eligible: false,
+          field_surveyed: false,
+          duplicate_note: "他の候補地点と重複している可能性があります。"
+        }
+      };
+    })
+  };
+}
+
+function fitInitialReferenceBounds() {
+  if (didFitInitialReferenceBounds) return;
+  didFitInitialReferenceBounds = true;
+  const features = referenceDataCache?.features || [];
+  if (!features.length) {
+    map.easeTo(YOKOZE_VIEW);
+    return;
+  }
+  try {
+    map.fitBounds(boundsFromFeatures(features), { padding: 90, maxZoom: 15, duration: 700 });
+  } catch (error) {
+    map.easeTo(YOKOZE_VIEW);
+    console.warn(error);
+  }
+}
+
+function getLayerCheckboxState(checkboxId) {
+  if (!checkboxId) return true;
+  const checkbox = document.getElementById(checkboxId);
+  return checkbox ? checkbox.checked : true;
+}
+
+function setLayerGroupVisibility(id, visible) {
+  const visibility = visible ? "visible" : "none";
+  [`${id}-circle`, `${id}-label`].forEach((layerId) => {
+    if (map.getLayer(layerId)) {
+      map.setLayoutProperty(layerId, "visibility", visibility);
+    }
+  });
+}
+
+function addPointLayer(id, data, color, shortLabel, visibilityCheckboxId) {
   if (map.getSource(id)) {
     map.getSource(id).setData(data);
+    setLayerGroupVisibility(id, getLayerCheckboxState(visibilityCheckboxId));
     return;
   }
 
@@ -306,6 +363,8 @@ function addPointLayer(id, data, color, shortLabel) {
     }
   });
 
+  setLayerGroupVisibility(id, getLayerCheckboxState(visibilityCheckboxId));
+
   if (!interactiveLayerIds.has(id)) {
     interactiveLayerIds.add(id);
     map.on("click", `${id}-circle`, (event) => {
@@ -313,7 +372,7 @@ function addPointLayer(id, data, color, shortLabel) {
       const coordinates = feature.geometry.coordinates.slice();
       new maplibregl.Popup()
         .setLngLat(coordinates)
-        .setDOMContent(createPopupContent(feature.properties))
+        .setDOMContent(createPopupContent(feature))
         .addTo(map);
     });
 
@@ -326,7 +385,9 @@ function addPointLayer(id, data, color, shortLabel) {
   }
 }
 
-function createPopupContent(properties) {
+function createPopupContent(feature) {
+  const properties = feature.properties || {};
+  const coordinates = feature.geometry?.coordinates || [properties.longitude, properties.latitude];
   const status = properties.verification_status || "unknown";
   const wrapper = document.createElement("article");
   wrapper.className = "popup-card";
@@ -342,22 +403,36 @@ function createPopupContent(properties) {
 
   const caution = document.createElement("p");
   caution.className = "small-note";
-  caution.textContent = "未確認情報を含むため、現地案内と施設管理者の指示を優先してください。";
+  caution.textContent = status === "reference"
+    ? "この地点はOpenStreetMapから抽出した参考情報です。位置、設備、利用条件等は独立確認されていません。"
+    : "未確認情報を含む場合があります。現地案内と施設管理者の指示を優先してください。";
   wrapper.append(caution);
 
   const rows = [
+    ["表示区分", status === "reference" ? "OSM参考地点・未確認・独立確認前・CC0データではない" : toDisplay(status)],
+    ["OSM ID", toDisplay(properties.osm_id || properties["@id"] || feature.id)],
+    ["name", toDisplay(properties.name)],
+    ["amenity", toDisplay(properties.amenity)],
     ["施設種別", toDisplay(properties.category)],
     ["施設利用時間", toDisplay(properties.facility_opening_hours)],
-    ["トイレ利用時間", toDisplay(properties.toilet_opening_hours)],
+    ["トイレ利用時間", toDisplay(properties.toilet_opening_hours || properties.opening_hours)],
     ["一般利用条件", toDisplay(properties.access)],
+    ["利用料金", toDisplay(properties.fee)],
     ["車いす対応", toDisplay(properties.wheelchair)],
     ["おむつ交換台", toDisplay(properties.changing_table)],
     ["オストメイト設備", toDisplay(properties.ostomy)],
+    ["排水方式", toDisplay(properties["toilets:disposal"])],
+    ["緯度", toDisplay(Number(coordinates[1]).toFixed(6))],
+    ["経度", toDisplay(Number(coordinates[0]).toFixed(6))],
     ["最終確認日", toDisplay(properties.verification_date)],
+    ["確認状態", toDisplay(properties.verification_status)],
     ["情報源", toDisplay(properties.source_name)],
+    ["情報源ライセンス", toDisplay(properties.source_license)],
     ["座標の情報源", toDisplay(properties.coordinate_source)],
     ["データライセンス", toDisplay(properties.data_license)],
-    ["CC0収録可否", toDisplay(properties.cc0_eligible)]
+    ["CC0収録可否", toDisplay(properties.cc0_eligible)],
+    ["現地確認", toDisplay(properties.field_surveyed)],
+    ["重複可能性", toDisplay(properties.duplicate_note)]
   ];
 
   const table = document.createElement("table");
@@ -372,6 +447,36 @@ function createPopupContent(properties) {
     table.append(tr);
   });
   wrapper.append(table);
+
+  if (status === "reference") {
+    const tagDetails = document.createElement("details");
+    const summary = document.createElement("summary");
+    const tagTable = document.createElement("table");
+    summary.textContent = "その他GeoJSON内のOSMタグ";
+    tagTable.className = "popup-table";
+    Object.entries(properties)
+      .filter(([key]) => !["id", "osm_id", "category", "longitude", "latitude", "verification_status", "verification_method", "source_name", "source_license", "data_license", "coordinate_source", "cc0_eligible", "field_surveyed", "duplicate_note"].includes(key))
+      .forEach(([key, value]) => {
+        const tr = document.createElement("tr");
+        const th = document.createElement("th");
+        const td = document.createElement("td");
+        th.textContent = key;
+        td.textContent = toDisplay(value);
+        tr.append(th, td);
+        tagTable.append(tr);
+      });
+    tagDetails.append(summary, tagTable);
+    wrapper.append(tagDetails);
+
+    const editButton = document.createElement("button");
+    editButton.type = "button";
+    editButton.className = "secondary-button popup-action";
+    editButton.textContent = "この場所の情報を確認・修正する";
+    editButton.addEventListener("click", () => {
+      openEditSubmission(feature);
+    });
+    wrapper.append(editButton);
+  }
 
   if (properties.source_url) {
     const link = document.createElement("a");
@@ -396,6 +501,50 @@ function openDialog(dialog) {
 function closeDialog(button) {
   const dialog = button.closest("dialog");
   if (dialog) dialog.close();
+}
+
+function resetSubmissionContext() {
+  $("#submission-type").value = "new";
+  $("#osm-id").value = "";
+  $("#osm-latitude").value = "";
+  $("#osm-longitude").value = "";
+  $("#osm-attributes").value = "";
+  $("#reference-verification-status").value = "reference";
+  $("#osm-context-id").textContent = "未確認";
+  $("#osm-context-name").textContent = "未確認";
+  $("#osm-context-coordinates").textContent = "未確認";
+  $("#osm-context-tags").textContent = "未確認";
+  $("#osm-reference-context").hidden = true;
+}
+
+function openEditSubmission(feature) {
+  const properties = feature.properties || {};
+  const coordinates = feature.geometry?.coordinates || [properties.longitude, properties.latitude];
+  const lng = Number(coordinates[0]);
+  const lat = Number(coordinates[1]);
+  const osmId = safeText(properties.osm_id || properties["@id"] || feature.id, 120);
+  const osmTags = JSON.stringify(properties, null, 2);
+
+  $("#submission-type").value = "edit_existing";
+  $("#osm-id").value = osmId;
+  $("#osm-latitude").value = Number.isFinite(lat) ? lat.toFixed(6) : "";
+  $("#osm-longitude").value = Number.isFinite(lng) ? lng.toFixed(6) : "";
+  $("#osm-attributes").value = osmTags.slice(0, 4000);
+  $("#reference-verification-status").value = "reference";
+  $("#osm-context-id").textContent = osmId || "未確認";
+  $("#osm-context-name").textContent = properties.name && properties.name !== "OSM参考地点" ? safeText(properties.name, 120) : "未確認";
+  $("#osm-context-coordinates").textContent = Number.isFinite(lat) && Number.isFinite(lng)
+    ? `緯度 ${lat.toFixed(6)} / 経度 ${lng.toFixed(6)}`
+    : "未確認";
+  $("#osm-context-tags").textContent = osmTags.slice(0, 1200);
+  $("#osm-reference-context").hidden = false;
+
+  $("#facility-name").value = properties.name && properties.name !== "OSM参考地点" ? safeText(properties.name, 80) : "";
+  $("#category").value = "public_toilet";
+  if (Number.isFinite(lat) && Number.isFinite(lng)) {
+    setDraftPosition(lng, lat, true);
+  }
+  openDialog($("#submission-dialog"));
 }
 
 function setDraftPosition(lng, lat, moveMap = false) {
@@ -439,6 +588,12 @@ function updatePositionWarning() {
 
 function getFormDataObject() {
   return {
+    submissionType: $("#submission-type").value || "new",
+    osmId: safeText($("#osm-id").value, 120),
+    osmLatitude: $("#osm-latitude").value ? Number($("#osm-latitude").value) : null,
+    osmLongitude: $("#osm-longitude").value ? Number($("#osm-longitude").value) : null,
+    osmAttributes: safeText($("#osm-attributes").value, 4000),
+    referenceVerificationStatus: $("#reference-verification-status").value || "reference",
     facilityName: safeText($("#facility-name").value, 80),
     category: $("#category").value,
     latitude: Number($("#latitude").value),
@@ -479,14 +634,31 @@ function validateSubmission() {
 }
 
 function buildIssueBody(data) {
+  const typeLabel = data.submissionType === "edit_existing" ? "既存地点の確認・修正" : "新規追加";
+  const osmBlock = data.submissionType === "edit_existing" ? `
+## OSM参考元情報
+
+- OSM ID: ${markdownValue(data.osmId)}
+- OSM上の緯度: ${Number.isFinite(data.osmLatitude) ? data.osmLatitude.toFixed(6) : "unknown"}
+- OSM上の経度: ${Number.isFinite(data.osmLongitude) ? data.osmLongitude.toFixed(6) : "unknown"}
+- 参照時の確認状態: ${markdownValue(data.referenceVerificationStatus)}
+- OSM属性:
+
+\`\`\`json
+${markdownValue(data.osmAttributes, "{}")}
+\`\`\`
+
+` : "";
+
   return `## 基本情報
 
+- 投稿種別: ${typeLabel}
 - 施設名: ${markdownValue(data.facilityName)}
 - 施設種別: ${markdownValue(data.category)}
-- 緯度: ${data.latitude.toFixed(6)}
-- 経度: ${data.longitude.toFixed(6)}
+- 投稿者が確認した緯度: ${data.latitude.toFixed(6)}
+- 投稿者が確認した経度: ${data.longitude.toFixed(6)}
 
-## 利用条件
+${osmBlock}## 利用条件
 
 - 一般利用: ${markdownValue(data.access)}
 - 購入・施設利用: ${markdownValue(data.purchaseNote)}
@@ -516,12 +688,14 @@ function buildIssueBody(data) {
 
 - 投稿直後は地図へ自動表示しない
 - 確認後にのみ \`data/verified/\` のCC0用GeoJSONへ追加する
+- 既存地点の確認・修正の場合、OSM座標と投稿者確認座標を分けて確認する
 - Google Maps等からの転用がないか確認する`;
 }
 
 function buildIssueUrl(data) {
+  const titlePrefix = data.submissionType === "edit_existing" ? "[トイレ情報確認・修正]" : "[トイレ情報投稿]";
   const params = new URLSearchParams({
-    title: `[トイレ情報投稿] ${data.facilityName}`,
+    title: `${titlePrefix} ${data.facilityName}`,
     body: buildIssueBody(data),
     labels: "data"
   });
@@ -559,6 +733,10 @@ function buildDraftFeature(data) {
       ostomy: data.ostomy,
       gender: data.gender,
       verification_status: "submitted",
+      submission_type: data.submissionType,
+      source_osm_id: data.osmId || null,
+      source_osm_longitude: Number.isFinite(data.osmLongitude) ? Number(data.osmLongitude.toFixed(6)) : null,
+      source_osm_latitude: Number.isFinite(data.osmLatitude) ? Number(data.osmLatitude.toFixed(6)) : null,
       verification_method: data.verificationMethod,
       verification_date: data.verificationDate,
       source_name: data.sourceName,
@@ -602,7 +780,7 @@ async function handleGeoJsonImport(file) {
       throw new Error("Point地物がありません");
     }
     importedGeoJsonData = featureCollection;
-    addPointLayer("imported-toilets", featureCollection, "#1e6ea7", "取込");
+    addPointLayer("imported-toilets", featureCollection, "#3478C0", "取込", "layer-imported-geojson");
     map.fitBounds(boundsFromFeatures(featureCollection.features), { padding: 80, maxZoom: 16 });
     status.textContent = `GeoJSONを${featureCollection.features.length}件プレビューしました。正式データには未追加です。`;
   } catch (error) {
@@ -640,7 +818,7 @@ function boundsFromFeatures(features) {
 
 function restoreImportedGeoJson() {
   if (!importedGeoJsonData?.features?.length) return;
-  addPointLayer("imported-toilets", importedGeoJsonData, "#1e6ea7", "取込");
+  addPointLayer("imported-toilets", importedGeoJsonData, "#3478C0", "取込", "layer-imported-geojson");
 }
 
 async function handleSvgImport(file) {
@@ -661,6 +839,7 @@ async function handleSvgImport(file) {
     const lngLat = draftMarker ? draftMarker.getLngLat() : map.getCenter();
     const markerElement = document.createElement("div");
     markerElement.className = "marker-svg-preview";
+    importedSvgMarkerElement = markerElement;
     const markerImg = document.createElement("img");
     markerImg.alt = "";
     markerImg.src = importedSvgUrl;
@@ -670,6 +849,7 @@ async function handleSvgImport(file) {
     importedSvgMarker = new maplibregl.Marker({ element: markerElement, draggable: true })
       .setLngLat(lngLat)
       .addTo(map);
+    setImportedSvgVisibility(getLayerCheckboxState("layer-imported-svg"));
     status.textContent = "SVGをプレビューしました。正式データには未追加です。";
   } catch (error) {
     status.textContent = `SVGを読み込めませんでした: ${error.message}`;
@@ -697,6 +877,12 @@ function sanitizeSvg(raw) {
   return new XMLSerializer().serializeToString(doc.documentElement);
 }
 
+function setImportedSvgVisibility(visible) {
+  if (importedSvgMarkerElement) {
+    importedSvgMarkerElement.hidden = !visible;
+  }
+}
+
 function clearImports() {
   ["imported-toilets-circle", "imported-toilets-label"].forEach((id) => {
     if (map.getLayer(id)) map.removeLayer(id);
@@ -704,6 +890,7 @@ function clearImports() {
   if (map.getSource("imported-toilets")) map.removeSource("imported-toilets");
   if (importedSvgMarker) importedSvgMarker.remove();
   importedSvgMarker = null;
+  importedSvgMarkerElement = null;
   if (importedSvgUrl) URL.revokeObjectURL(importedSvgUrl);
   importedSvgUrl = null;
   importedGeoJsonData = null;
@@ -714,21 +901,39 @@ function clearImports() {
 }
 
 function bindUi() {
-  $("#open-form").addEventListener("click", () => openDialog($("#submission-dialog")));
+  $("#open-form").addEventListener("click", () => {
+    resetSubmissionContext();
+    openDialog($("#submission-dialog"));
+  });
   $("#open-import").addEventListener("click", () => openDialog($("#import-dialog")));
   $("#basemap-select").addEventListener("change", (event) => {
     switchBasemap(event.target.value);
+  });
+  $("#submission-type").addEventListener("change", (event) => {
+    if (event.target.value === "new") resetSubmissionContext();
   });
   document.querySelectorAll("[data-close-dialog]").forEach((button) => {
     button.addEventListener("click", () => closeDialog(button));
   });
 
-  $("#terrain-toggle").addEventListener("change", (event) => {
-    map.setTerrain(event.target.checked ? { source: "mapterhorn-dem", exaggeration: 1.15 } : null);
-  });
-
   $("#fit-yokoze").addEventListener("click", () => {
     map.easeTo(YOKOZE_VIEW);
+  });
+
+  $("#layer-osm-reference").addEventListener("change", (event) => {
+    setLayerGroupVisibility("reference-toilets", event.target.checked);
+  });
+
+  $("#layer-verified").addEventListener("change", (event) => {
+    setLayerGroupVisibility("verified-toilets", event.target.checked);
+  });
+
+  $("#layer-imported-geojson").addEventListener("change", (event) => {
+    setLayerGroupVisibility("imported-toilets", event.target.checked);
+  });
+
+  $("#layer-imported-svg").addEventListener("change", (event) => {
+    setImportedSvgVisibility(event.target.checked);
   });
 
   $("#pick-position").addEventListener("click", () => {

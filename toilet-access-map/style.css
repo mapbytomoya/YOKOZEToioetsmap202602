@@ -1,17 +1,28 @@
 :root {
   color-scheme: light;
-  --ink: #17201b;
-  --muted: #546159;
-  --panel: #ffffff;
-  --line: #d9e0da;
-  --field: #f7faf8;
-  --accent: #0b6b58;
-  --accent-strong: #084d40;
-  --reference: #b65f00;
-  --submitted: #1e6ea7;
-  --verified: #0b7d62;
-  --danger: #a9352a;
-  --shadow: 0 12px 32px rgba(23, 32, 27, 0.18);
+  --color-background: #f7f7f2;
+  --color-surface: #ffffff;
+  --color-text: #26332c;
+  --color-primary: #2f6b4f;
+  --color-primary-hover: #24573f;
+  --color-reference: #e59f3a;
+  --color-verified: #2a7f73;
+  --color-temporary: #3478c0;
+  --color-muted: #7a817d;
+  --color-error: #b64242;
+  --color-border: #d9ded9;
+  --ink: var(--color-text);
+  --muted: var(--color-muted);
+  --panel: var(--color-surface);
+  --line: var(--color-border);
+  --field: #fbfcf8;
+  --accent: var(--color-primary);
+  --accent-strong: var(--color-primary-hover);
+  --reference: var(--color-reference);
+  --submitted: var(--color-temporary);
+  --verified: var(--color-verified);
+  --danger: var(--color-error);
+  --shadow: 0 8px 22px rgba(38, 51, 44, 0.14);
 }
 
 * {
@@ -25,6 +36,7 @@ body {
 }
 
 body {
+  background: var(--color-background);
   color: var(--ink);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   line-height: 1.6;
@@ -90,9 +102,9 @@ a {
   justify-content: space-between;
   left: 18px;
   max-width: calc(100vw - 36px);
-  padding: 14px 16px;
+  padding: 12px 14px;
   top: 18px;
-  width: 720px;
+  width: min(430px, calc(100vw - 36px));
 }
 
 .eyebrow {
@@ -131,6 +143,12 @@ h3 {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.topbar-actions {
+  bottom: 44px;
+  position: fixed;
+  right: 18px;
 }
 
 .primary-button,
@@ -191,10 +209,22 @@ h3 {
   bottom: 46px;
   box-shadow: var(--shadow);
   left: 18px;
-  max-height: calc(100vh - 170px);
+  max-height: calc(100vh - 220px);
   overflow: auto;
   padding: 16px;
   width: min(390px, calc(100vw - 36px));
+}
+
+.info-panel details {
+  border-top: 1px solid var(--line);
+  margin-top: 8px;
+  padding-top: 8px;
+}
+
+.info-panel summary {
+  color: var(--accent-strong);
+  cursor: pointer;
+  font-weight: 700;
 }
 
 .info-panel section + section {
@@ -247,6 +277,10 @@ h3 {
   background: var(--verified);
 }
 
+.legend-dot.imported {
+  background: var(--submitted);
+}
+
 .flow-list {
   margin: 0;
   padding-left: 22px;
@@ -263,6 +297,22 @@ h3 {
   padding: 10px;
   right: 18px;
   top: 104px;
+}
+
+.layer-fieldset {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  gap: 6px;
+  padding: 8px;
+}
+
+.layer-fieldset legend {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.layer-fieldset .toggle-row {
+  font-size: 13px;
 }
 
 .control-label {
@@ -411,6 +461,55 @@ button:focus-visible {
   padding: 9px 10px;
 }
 
+.reference-context {
+  background: #fff8ec;
+  border: 1px solid #edcc95;
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.reference-context[hidden] {
+  display: none;
+}
+
+.reference-context p {
+  color: var(--ink);
+  font-size: 13px;
+  margin: 0;
+}
+
+.reference-context dl {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.reference-context div {
+  display: grid;
+  gap: 2px;
+}
+
+.reference-context dt {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.reference-context dd {
+  margin: 0;
+  min-width: 0;
+}
+
+.reference-context code {
+  display: block;
+  max-height: 110px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .draft-tools {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -447,7 +546,7 @@ button:focus-visible {
 .popup-card {
   display: grid;
   gap: 10px;
-  max-width: 310px;
+  max-width: 360px;
 }
 
 .popup-card h3 {
@@ -510,6 +609,11 @@ button:focus-visible {
   width: 42px;
 }
 
+.popup-action {
+  justify-content: center;
+  width: 100%;
+}
+
 .marker-svg-preview img {
   height: 34px;
   width: 34px;
@@ -527,7 +631,9 @@ button:focus-visible {
 
   .topbar-actions {
     display: grid;
-    grid-template-columns: 1fr 1.4fr;
+    grid-template-columns: 1fr;
+    left: 10px;
+    right: 10px;
   }
 
   h1 {
@@ -544,7 +650,8 @@ button:focus-visible {
 
   .map-controls {
     right: 10px;
-    top: 132px;
+    top: 118px;
+    width: min(220px, calc(100vw - 20px));
   }
 
   .field-grid,

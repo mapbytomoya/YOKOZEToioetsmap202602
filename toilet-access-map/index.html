@@ -27,16 +27,20 @@
       <main id="main-panel" class="info-panel" tabindex="-1">
         <section aria-labelledby="about-title">
           <h2 id="about-title">この地図について</h2>
-          <p>横瀬町には、再利用可能な公衆トイレデータが十分に整備されていません。本サイトは完成済みの網羅的地図ではなく、市民参加型で情報を投稿・確認・更新するための試作版です。</p>
-          <p>投稿内容はすぐに正式データになりません。確認済み情報だけをCC0データへ追加します。利用時は現地の案内や施設管理者の指示を優先してください。営業時間や利用条件は変更される可能性があります。</p>
+          <p>この地図は、横瀬町で利用できるトイレ情報をみんなで集めるための試作版です。現在表示している地点の多くはOpenStreetMapから抽出した未確認の参考情報です。各地点の情報は、現地確認や施設への問い合わせを通して今後更新していきます。新しい場所や修正情報は、地図上の投稿機能から送ることができます。</p>
+          <details>
+            <summary>詳しく見る</summary>
+            <p>投稿内容は自動反映されず、管理者確認後にのみCC0データへ追加します。利用時は現地の案内や施設管理者の指示を優先してください。OSM参考地点はODbL 1.0、YOKOZE Atlas確認済みデータはCC0 1.0として分けて扱います。</p>
+          </details>
         </section>
 
         <section aria-labelledby="legend-title">
           <h2 id="legend-title">凡例</h2>
           <div class="legend-list">
-            <span><i class="legend-dot reference"></i>参考・未確認</span>
+            <span><i class="legend-dot reference"></i>OSM参考地点・未確認</span>
             <span><i class="legend-dot submitted"></i>投稿済み・確認待ち</span>
             <span><i class="legend-dot verified"></i>確認済み・CC0公開対象</span>
+            <span><i class="legend-dot imported"></i>手動取り込み・一時表示</span>
           </div>
         </section>
 
@@ -67,19 +71,34 @@
             <option value="gsi-standard">国土地理院 標準地図</option>
           </select>
         </label>
-        <label class="toggle-row">
-          <input type="checkbox" id="terrain-toggle" checked>
-          <span>地形表示</span>
-        </label>
+        <fieldset class="layer-fieldset">
+          <legend>レイヤー</legend>
+          <label class="toggle-row">
+            <input type="checkbox" id="layer-osm-reference" checked>
+            <span>OSM参考候補</span>
+          </label>
+          <label class="toggle-row">
+            <input type="checkbox" id="layer-verified" checked>
+            <span>確認済みCC0</span>
+          </label>
+          <label class="toggle-row">
+            <input type="checkbox" id="layer-imported-geojson" checked>
+            <span>追加GeoJSON</span>
+          </label>
+          <label class="toggle-row">
+            <input type="checkbox" id="layer-imported-svg" checked>
+            <span>追加SVG</span>
+          </label>
+        </fieldset>
         <button type="button" id="fit-yokoze" class="small-button">横瀬町周辺</button>
       </aside>
 
       <footer class="attribution-note">
         <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a>
         <span id="basemap-credit">背景地図: OpenFreeMap</span>
-        <span>© Mapterhorn</span>
-        <span>OSM参考データ: ODbL 1.0</span>
+        <span>OSMトイレ参考候補データ: ODbL 1.0</span>
         <span>確認済みデータ: CC0 1.0</span>
+        <span>追加レイヤー: ライセンスは読み込んだデータの提供条件に従ってください</span>
       </footer>
     </div>
 
@@ -98,6 +117,39 @@
 
         <fieldset>
           <legend>基本情報</legend>
+          <label>投稿種別
+            <select id="submission-type" name="submissionType">
+              <option value="new">新規追加</option>
+              <option value="edit_existing">既存地点の確認・修正</option>
+            </select>
+          </label>
+          <section id="osm-reference-context" class="reference-context" hidden aria-live="polite">
+            <h3>OSM参考地点からの確認・修正</h3>
+            <p>OpenStreetMapに登録されている内容を、そのまま確認せず再投稿しないでください。現地確認、施設への問い合わせ、公式情報等によって確認した内容を入力してください。</p>
+            <dl>
+              <div>
+                <dt>OSM ID</dt>
+                <dd id="osm-context-id">未確認</dd>
+              </div>
+              <div>
+                <dt>OSM上の施設名</dt>
+                <dd id="osm-context-name">未確認</dd>
+              </div>
+              <div>
+                <dt>OSM座標</dt>
+                <dd id="osm-context-coordinates">未確認</dd>
+              </div>
+              <div>
+                <dt>OSM属性</dt>
+                <dd><code id="osm-context-tags">未確認</code></dd>
+              </div>
+            </dl>
+          </section>
+          <input id="osm-id" name="osmId" type="hidden">
+          <input id="osm-latitude" name="osmLatitude" type="hidden">
+          <input id="osm-longitude" name="osmLongitude" type="hidden">
+          <input id="osm-attributes" name="osmAttributes" type="hidden">
+          <input id="reference-verification-status" name="referenceVerificationStatus" type="hidden" value="reference">
           <label>施設名 <span class="required">必須</span>
             <input id="facility-name" name="facilityName" type="text" maxlength="80" required>
           </label>

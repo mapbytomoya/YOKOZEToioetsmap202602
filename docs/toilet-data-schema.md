@@ -19,6 +19,7 @@
 | `category` | 施設種別 | `park` |
 | `longitude` | 経度 | `139.106441` |
 | `latitude` | 緯度 | `35.989121` |
+| `toilet_exists` | 投稿者がトイレの存在を確認したか | `yes` |
 | `access` | 一般利用条件 | `unknown` |
 | `access_note` | 利用条件の補足 | `声掛けの要否は未確認` |
 | `facility_opening_hours` | 施設の利用時間 | `8:30-17:30` |
@@ -29,6 +30,12 @@
 | `ostomy` | オストメイト設備 | `unknown` |
 | `gender` | 男女別・共用 | `unknown` |
 | `verification_status` | 確認状態 | `reference` |
+| `submission_type` | 新規地点か既存OSM地点の確認情報か | `edit_existing` |
+| `submission_destination` | 希望する更新経路 | `atlas` |
+| `source_osm_id` | 参照したOSMオブジェクトID | `node/9896819269` |
+| `source_osm_name` | 参照時点のOSM上の名称 | `横瀬駅前観光トイレ` |
+| `source_osm_longitude` | 参照時点のOSM経度 | `139.106441` |
+| `source_osm_latitude` | 参照時点のOSM緯度 | `35.989121` |
 | `verification_method` | 確認方法 | `osm_reference` |
 | `verification_date` | 確認日 | `2026-08-02` |
 | `source_name` | 情報源名 | `横瀬町公式Webページ` |
@@ -37,6 +44,7 @@
 | `coordinate_source` | 座標の情報源 | `OpenStreetMap` |
 | `data_license` | このデータの扱い | `CC0 1.0 Universal` |
 | `cc0_eligible` | CC0収録可否 | `false` |
+| `cc0_publication_consent` | 投稿者のCC0公開同意 | `true` |
 | `notes` | 備考 | `正確な入口位置は未確認` |
 
 ## 推奨値
@@ -55,11 +63,18 @@
 
 `verification_status`: `reference`, `submitted`, `verified`
 
+`toilet_exists`: `yes`, `no`, `unknown`
+
+`submission_type`: `new`, `edit_existing`
+
+`submission_destination`: `atlas`, `atlas_and_osm`
+
 `verification_method`: `osm_reference`, `official_web`, `phone`, `email`, `field_survey`, `user_submission`, `unknown`
 
 ## ライセンス分離
 
 - `reference`: OSMなど第三者由来または未確認の参考情報。CC0公開データに直接転用しません。
-- `submitted`: GitHub Issueとして投稿された未確認情報。管理者確認前は地図へ自動表示せず、CC0公開データにも含めません。
+- `submitted`: コピー、メール、共有、GitHub Issue等で提供された未確認情報。`cc0_publication_consent` が `true` でも、管理者確認前は `cc0_eligible: false` とし、地図へ自動表示せず、CC0公開データにも含めません。
 - `verified`: 独立確認と権利確認が完了した情報。CC0公開用GeoJSONへ追加できます。
 
+`source_osm_*` は参考元を追跡するためのフィールドです。OSM値を投稿者の確認情報である `name`、`category`、座標、設備属性へ自動転記してはいけません。OSM参考レイヤーはODbL、確認済みレイヤーはCC0として、ファイルと表示を分離します。

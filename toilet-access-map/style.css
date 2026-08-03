@@ -1,13 +1,13 @@
 :root {
   color-scheme: light;
   --color-background: #f7f7f2;
-  --color-surface: #fffdf7;
+  --color-surface: #ffffff;
   --color-text: #26332c;
-  --color-primary: #3d6651;
-  --color-primary-hover: #2d513f;
-  --color-reference: #cf8f35;
-  --color-verified: #35786d;
-  --color-temporary: #416f9f;
+  --color-primary: #2f6b4f;
+  --color-primary-hover: #24573f;
+  --color-reference: #e59f3a;
+  --color-verified: #2a7f73;
+  --color-temporary: #3478c0;
   --color-muted: #7a817d;
   --color-error: #b64242;
   --color-border: #d9ded9;
@@ -246,6 +246,20 @@ h3 {
   font-size: 13px;
 }
 
+.notice-strong {
+  background: #eef6f2;
+  border-left: 4px solid var(--accent);
+  color: var(--ink);
+  padding: 10px 12px;
+}
+
+.compact-list {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
 .legend-list {
   display: grid;
   gap: 6px;
@@ -283,7 +297,7 @@ h3 {
 }
 
 .legend-dot.wheelchair-yes {
-  background: #238b5b;
+  background: #1d744d;
 }
 
 .legend-dot.wheelchair-limited {
@@ -295,22 +309,83 @@ h3 {
 }
 
 .legend-dot.wheelchair-unknown {
-  background: #7b8580;
+  background: #606a65;
 }
 
-.flow-list,
-.open-web-list {
+.flow-list {
   margin: 0;
   padding-left: 22px;
 }
 
-.open-web-list {
+.route-cards {
   display: grid;
-  gap: 4px;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.route-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 10px;
+}
+
+.route-card h3,
+.route-card p,
+.route-card ul {
+  margin: 0;
+}
+
+.route-card p,
+.route-card li {
+  font-size: 12px;
+}
+
+.route-card ul {
+  display: grid;
+  gap: 3px;
+  padding-left: 17px;
+}
+
+.route-icon {
+  align-items: center;
+  border-radius: 50%;
+  display: inline-flex;
+  font-size: 16px;
+  font-weight: 800;
+  height: 30px;
+  justify-content: center;
+  width: 30px;
+}
+
+.osm-route-card {
+  background: #f2f6f0;
+  border-color: #bdcdbb;
+}
+
+.osm-route-card .route-icon {
+  background: #dfe9dc;
+  color: #39583f;
+}
+
+.atlas-route-card {
+  background: #eef6f2;
+  border-color: #b9d7ca;
+}
+
+.atlas-route-card .route-icon {
+  background: var(--accent);
+  color: #fff;
+}
+
+.admin-details .compact-list {
+  margin-bottom: 4px;
 }
 
 .map-controls {
-  background: rgba(255, 253, 247, 0.93);
+  background: rgba(255, 255, 255, 0.93);
   border: 1px solid #c9d4cb;
   border-radius: 8px;
   box-shadow: var(--shadow-soft);
@@ -338,7 +413,7 @@ h3 {
 
 .layer-fieldset .toggle-row {
   align-items: center;
-  color: #26332c;
+  color: var(--ink);
   display: grid;
   font-size: 12px;
   font-weight: 700;
@@ -354,7 +429,7 @@ h3 {
 }
 
 .control-label select {
-  background: #fffefa;
+  background: var(--panel);
   border-color: #b9c8bf;
   color: #23312a;
   font-size: 12px;
@@ -365,7 +440,7 @@ h3 {
 .map-controls .small-button {
   background: #edf5ef;
   border-color: #b3d0c2;
-  color: #2d513f;
+  color: var(--accent-strong);
   font-size: 12px;
   min-height: 30px;
   padding: 5px 8px;
@@ -373,7 +448,7 @@ h3 {
 
 .map-controls .toggle-row input[type="checkbox"] {
   appearance: none;
-  background: #fffefa;
+  background: var(--panel);
   border: 1.5px solid #9db0a5;
   border-radius: 4px;
   display: grid;
@@ -396,8 +471,8 @@ h3 {
 }
 
 .map-controls .toggle-row input[type="checkbox"]:checked {
-  background: #3d6651;
-  border-color: #3d6651;
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 .map-controls .toggle-row input[type="checkbox"]:checked::before {
@@ -405,10 +480,18 @@ h3 {
 }
 
 .toggle-row,
-.checkbox-row {
+.checkbox-row,
+.radio-row {
   align-items: flex-start;
   display: flex;
   gap: 8px;
+}
+
+.checkbox-row input,
+.radio-row input {
+  flex: 0 0 auto;
+  min-height: 20px;
+  width: auto;
 }
 
 .toggle-row {
@@ -479,6 +562,14 @@ label {
   font-weight: 700;
 }
 
+.form-value {
+  background: var(--field);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  margin: 0;
+  padding: 9px 10px;
+}
+
 input,
 select,
 textarea {
@@ -498,7 +589,8 @@ textarea {
 input:focus,
 select:focus,
 textarea:focus,
-button:focus-visible {
+button:focus-visible,
+.osm-action-button:focus-visible {
   outline: 3px solid rgba(11, 107, 88, 0.28);
   outline-offset: 2px;
 }
@@ -542,7 +634,7 @@ button:focus-visible {
 .success-message {
   background: #eff8f1;
   border-color: #b6d8c3;
-  color: #2d513f;
+  color: var(--accent-strong);
 }
 
 .success-message.error-message {
@@ -560,6 +652,17 @@ button:focus-visible {
   padding: 12px;
 }
 
+.readonly-badge {
+  background: var(--reference);
+  border-radius: 999px;
+  color: var(--ink);
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 3px 9px;
+  width: fit-content;
+}
+
 .reference-context[hidden] {
   display: none;
 }
@@ -573,6 +676,7 @@ button:focus-visible {
 .reference-context dl {
   display: grid;
   gap: 6px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   margin: 0;
 }
 
@@ -598,6 +702,51 @@ button:focus-visible {
   overflow: auto;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.reference-tags-row {
+  grid-column: 1 / -1;
+}
+
+.confirmed-information-heading {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+
+.confirmed-information-heading p {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 0;
+}
+
+.destination-options {
+  background: #f5f8f5;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.destination-options[hidden] {
+  display: none;
+}
+
+.destination-options .small-note,
+.new-osm-link-panel .small-note {
+  margin: 0;
+}
+
+.new-osm-link-panel {
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 6px;
+  padding-top: 9px;
+}
+
+.new-osm-link-panel[hidden],
+.new-osm-link-panel [hidden] {
+  display: none;
 }
 
 .draft-tools {
@@ -643,6 +792,25 @@ button:focus-visible {
   font-size: 17px;
 }
 
+.popup-license {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  margin: 0;
+  padding: 8px 9px;
+}
+
+.popup-license.reference {
+  background: #fff8ec;
+  border-color: #edcc95;
+}
+
+.popup-license.verified {
+  background: #edf7f5;
+  border-color: #acd3cc;
+}
+
 .status-pill,
 .accessibility-pill {
   border-radius: 999px;
@@ -656,6 +824,7 @@ button:focus-visible {
 
 .status-pill.reference {
   background: var(--reference);
+  color: var(--ink);
 }
 
 .status-pill.submitted {
@@ -667,11 +836,12 @@ button:focus-visible {
 }
 
 .accessibility-pill.wheelchair-yes {
-  background: #238b5b;
+  background: #1d744d;
 }
 
 .accessibility-pill.wheelchair-limited {
   background: #d29a2e;
+  color: var(--ink);
 }
 
 .accessibility-pill.wheelchair-no {
@@ -679,7 +849,7 @@ button:focus-visible {
 }
 
 .accessibility-pill.wheelchair-unknown {
-  background: #7b8580;
+  background: #606a65;
 }
 
 .popup-table {
@@ -717,8 +887,68 @@ button:focus-visible {
 }
 
 .popup-action {
+  box-sizing: border-box;
+  display: block;
   justify-content: center;
+  text-align: center;
   width: 100%;
+}
+
+.popup-action-group {
+  display: grid;
+  gap: 9px;
+}
+
+.popup-choice {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 7px;
+  padding: 10px;
+}
+
+.popup-choice p,
+.popup-choice small {
+  margin: 0;
+}
+
+.popup-choice p {
+  font-size: 13px;
+}
+
+.popup-choice small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.osm-choice {
+  background: #f2f6f0;
+  border-color: #bdcdbb;
+}
+
+.atlas-choice {
+  background: #eef6f2;
+  border-color: #b9d7ca;
+}
+
+.osm-action-button {
+  align-items: center;
+  background: #49674f;
+  border: 1px solid #3e5944;
+  border-radius: 6px;
+  color: #fff;
+  display: inline-flex;
+  font-weight: 700;
+  justify-content: center;
+  min-height: 42px;
+  padding: 9px 13px;
+  text-decoration: none;
+}
+
+.osm-action-button:hover,
+.osm-action-button:focus-visible {
+  background: #39533f;
+  color: #fff;
 }
 
 .marker-svg-preview img {
@@ -764,6 +994,15 @@ button:focus-visible {
   .field-grid,
   .position-tools {
     grid-template-columns: 1fr;
+  }
+
+  .route-cards,
+  .reference-context dl {
+    grid-template-columns: 1fr;
+  }
+
+  .reference-tags-row {
+    grid-column: auto;
   }
 
   .sheet-dialog {

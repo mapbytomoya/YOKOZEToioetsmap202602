@@ -7,8 +7,39 @@ body:
   - type: markdown
     attributes:
       value: |
-        横瀬町トイレアクセスマップへの投稿フォームです。投稿内容はすぐに正式データにはならず、管理者・ゼミ生による確認後にのみCC0公開データへ追加されます。
+        横瀬町トイレアクセスマップへの情報提供フォームです。投稿内容はすぐに正式データにはならず、管理者・ゼミ生による確認後にのみCC0公開データへ追加されます。
+        OpenStreetMap参考情報はODbLであり、このフォームの入力へ自動転記しません。OSMを更新する場合はOpenStreetMap上で編集してください。
         Google Maps、Google検索結果、口コミ、写真など、他サービスからコピーした情報は投稿しないでください。
+  - type: dropdown
+    id: submission_type
+    attributes:
+      label: 情報提供の種類
+      options:
+        - new
+        - edit_existing
+      description: newは新しい地点、edit_existingは既存OSM参考地点について確認した情報です。
+    validations:
+      required: true
+  - type: dropdown
+    id: submission_destination
+    attributes:
+      label: 希望する更新経路
+      options:
+        - atlas
+        - atlas_and_osm
+      description: atlas_and_osmを選んでもOSMへ自動投稿されません。OpenStreetMap上で別途編集・保存してください。
+    validations:
+      required: true
+  - type: input
+    id: source_osm_id
+    attributes:
+      label: 参考にしたOSM ID（任意）
+      description: 既存OSM参考地点の場合のみ、node/123、way/123、relation/123の形式で入力します。
+  - type: input
+    id: source_osm_name
+    attributes:
+      label: 参照時点のOSM上の名称（任意）
+      description: 投稿者が確認した施設名とは分けて記録します。
   - type: input
     id: facility_name
     attributes:
@@ -44,6 +75,16 @@ body:
     attributes:
       label: 経度
       placeholder: "139.106441"
+    validations:
+      required: true
+  - type: dropdown
+    id: toilet_exists
+    attributes:
+      label: トイレの存在
+      options:
+        - unknown
+        - yes
+        - no
     validations:
       required: true
   - type: dropdown
@@ -95,6 +136,18 @@ body:
         - no
     validations:
       required: true
+  - type: dropdown
+    id: gender
+    attributes:
+      label: 男女別・共用
+      options:
+        - unknown
+        - male
+        - female
+        - unisex
+        - mixed
+    validations:
+      required: true
   - type: input
     id: verification_date
     attributes:
@@ -134,4 +187,3 @@ body:
           required: true
         - label: Google Mapsなど他の地図サービス、検索結果、口コミ、写真等からコピーした情報ではありません。
           required: true
-

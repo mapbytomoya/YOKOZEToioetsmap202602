@@ -3,34 +3,43 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>横瀬町オープントイレアクセスマップ</title>
-    <meta name="description" content="横瀬町で利用可能なトイレ情報を、ログイン不要の投稿導線とオープンなGeoJSON運用で育てるWeb地図試作版">
+    <title>横瀬町トイレアクセスマップ</title>
+    <meta name="description" content="OpenStreetMapの共同編集と、YOKOZE Atlasへの独自確認情報の提供を分けて扱う横瀬町トイレアクセスマップ">
     <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css">
     <link rel="stylesheet" href="./style.css">
   </head>
   <body>
     <a class="skip-link" href="#main-panel">地図説明へ移動</a>
     <div class="app-shell">
-      <div id="map" aria-label="横瀬町オープントイレアクセスマップ"></div>
+      <div id="map" aria-label="横瀬町トイレアクセスマップ"></div>
 
       <header class="topbar" aria-label="サイト見出し">
         <div>
           <p class="eyebrow">YOKOZE Atlas 2026 試作版</p>
-          <h1>横瀬町オープントイレアクセスマップ</h1>
+          <h1>横瀬町トイレアクセスマップ</h1>
         </div>
         <div class="topbar-actions">
           <button type="button" id="open-import" class="ghost-button">取り込み</button>
-          <button type="button" id="open-form" class="primary-button">トイレ情報を投稿する</button>
+          <button type="button" id="open-form" class="primary-button">新しいトイレ情報を提供する</button>
         </div>
       </header>
 
       <main id="main-panel" class="info-panel" tabindex="-1">
         <section aria-labelledby="about-title">
-          <h2 id="about-title">この地図について</h2>
-          <p>この地図は、横瀬町で利用できるトイレ情報を、誰でも見られて、投稿できて、標準形式で引き継げるように育てるための試作版です。ピンの色は車いす対応状況を表します。現在表示している地点の多くはOpenStreetMapから抽出した未確認の参考情報です。</p>
+          <h2 id="about-title">みんなで更新できるトイレマップ</h2>
+          <p>この地図には、OpenStreetMapから抽出した未確認のトイレ候補を表示しています。</p>
+          <p>OpenStreetMapの情報は、OSM上で直接編集できます。現地調査や施設への問い合わせで確認した情報は、YOKOZE Atlasへ提供することもできます。</p>
+          <p>YOKOZE Atlasへ提供された情報は、管理者・ゼミ生が確認した後に正式データへ追加されます。</p>
+          <ul class="compact-list">
+            <li>OSMの編集にはOpenStreetMapアカウントが必要です</li>
+            <li>ログインなしで情報提供用の下書きを作成できます</li>
+            <li>提供内容は確認後に地図へ反映されます</li>
+            <li>現在のreference地点は確認済みデータではありません</li>
+          </ul>
           <details>
-            <summary>詳しく見る</summary>
-            <p>投稿内容は自動反映されず、管理者確認後にのみCC0データへ追加します。利用時は現地の案内や施設管理者の指示を優先してください。OSM参考地点はODbL 1.0、YOKOZE Atlas確認済みデータはCC0 1.0として分けて扱います。</p>
+            <summary>データと更新方法を詳しく見る</summary>
+            <p>OSM参考地点はODbL 1.0、YOKOZE Atlas確認済みデータはCC0 1.0として分けて扱います。OSMを編集してもAtlasのCC0データへ自動移行せず、Atlasへの提供内容も自動公開されません。</p>
+            <p>OSMでは現地で確認できた内容だけを編集し、他の地図サービスから情報をコピーしないでください。存在や重複が不明な地点を推測で削除・統合しないでください。</p>
           </details>
         </section>
 
@@ -51,28 +60,49 @@
           <p class="small-note">ウォーターパーク・シラヤマはreference表示です。座標はOpenStreetMap由来で、CC0収録対象ではありません。</p>
         </section>
 
-        <section aria-labelledby="open-web-title">
-          <h2 id="open-web-title">閉じない運用</h2>
-          <ul class="open-web-list">
-            <li>閲覧と投稿文作成はログイン不要</li>
-            <li>投稿下書きはGeoJSON・SVG・テキストで保存可能</li>
-            <li>GitHub、メール、共有先は後から置き換え可能</li>
-            <li>確認済みデータと参考データのライセンスを分離</li>
-          </ul>
+        <section aria-labelledby="routes-title">
+          <h2 id="routes-title">情報を更新する二つの方法</h2>
+          <div class="route-cards">
+            <article class="route-card osm-route-card">
+              <span class="route-icon" aria-hidden="true">↗</span>
+              <h3>OpenStreetMapを編集</h3>
+              <p>OSM上の位置や基本情報を共同編集します。</p>
+              <ul>
+                <li>OSMアカウントが必要</li>
+                <li>ODbLで共有</li>
+                <li>他のOSM利用者にも引き継がれる</li>
+              </ul>
+            </article>
+            <article class="route-card atlas-route-card">
+              <span class="route-icon" aria-hidden="true">✎</span>
+              <h3>確認情報を提供</h3>
+              <p>現地調査や問い合わせで確認した情報をYOKOZE Atlasへ提供します。</p>
+              <ul>
+                <li>下書き作成はログイン不要</li>
+                <li>管理者による確認あり</li>
+                <li>採用情報はCC0で公開</li>
+              </ul>
+            </article>
+          </div>
         </section>
 
         <section aria-labelledby="flow-title">
-          <h2 id="flow-title">投稿後の確認フロー</h2>
+          <h2 id="flow-title">情報提供の流れ</h2>
           <ol class="flow-list">
-            <li>利用者がフォームに入力</li>
-            <li>投稿内容を共有・メール・コピーで送信</li>
-            <li>管理者側でGitHub Issue等に登録</li>
-            <li>管理者・ゼミ生が内容を確認</li>
-            <li>重複、位置、利用条件、情報源、ライセンスを確認</li>
-            <li>必要に応じて電話・メール・現地調査</li>
-            <li>承認された情報だけをCC0用GeoJSONへ追加</li>
-            <li>Web地図へ反映</li>
+            <li>地図でトイレの場所を選ぶ</li>
+            <li>確認した情報を入力する</li>
+            <li>コピー、メール、共有、GitHubで送る</li>
+            <li>内容確認後に地図へ反映される</li>
           </ol>
+          <details class="admin-details">
+            <summary>管理者による確認内容</summary>
+            <ul class="compact-list">
+              <li>重複、座標、情報源、ライセンスを確認</li>
+              <li>必要に応じて電話・メール確認や現地再調査</li>
+              <li>採用情報をCC0用GeoJSONへ追加</li>
+              <li>GitHub Pagesを更新</li>
+            </ul>
+          </details>
         </section>
       </main>
 
@@ -127,26 +157,43 @@
       <form id="toilet-form" method="dialog" novalidate>
         <div class="dialog-header">
           <div>
-            <p class="eyebrow">GitHubアカウント不要</p>
-            <h2 id="form-title">トイレ情報を投稿する</h2>
+            <p class="eyebrow">情報提供用の下書き作成はログイン不要</p>
+            <h2 id="form-title">新しいトイレ情報を提供する</h2>
           </div>
           <button type="button" class="icon-button" data-close-dialog aria-label="閉じる">×</button>
         </div>
 
-        <p class="notice">入力した内容から投稿文を作成します。スマートフォンの共有、メール、コピーで送ることができます。</p>
+        <p class="notice notice-strong">このフォームは、OpenStreetMapの情報をコピーするためのものではありません。現地で確認した内容、施設管理者へ問い合わせた内容、または提供を受けた情報を入力してください。</p>
+        <p class="notice">入力内容はすぐには地図へ公開されません。管理者・ゼミ生が位置、重複、情報源、利用条件、ライセンスを確認した後、採用された情報だけがCC0データへ追加されます。</p>
+        <p class="notice">下書きはコピー、共有、メールで管理者へ送れます。GitHub Issueを利用する場合のみGitHubへのログインが必要です。</p>
         <p class="notice">個人情報、顔写真、車両ナンバー、私有地内部の情報は投稿しないでください。</p>
 
         <fieldset>
           <legend>基本情報</legend>
-          <label>投稿種別
-            <select id="submission-type" name="submissionType">
-              <option value="new">新規追加</option>
-              <option value="edit_existing">既存地点の確認・修正</option>
-            </select>
-          </label>
+          <input id="submission-type" name="submissionType" type="hidden" value="new">
+          <p class="form-value">情報提供の種類：<strong id="submission-type-label">新しいトイレ情報</strong></p>
+
+          <section id="new-destination-options" class="destination-options" aria-labelledby="destination-title">
+            <h3 id="destination-title">この情報をどこへ反映したいですか</h3>
+            <label class="radio-row">
+              <input type="radio" name="submissionDestination" value="atlas" checked>
+              <span>YOKOZE Atlasへ確認情報を提供する</span>
+            </label>
+            <label class="radio-row">
+              <input type="radio" name="submissionDestination" value="atlas_and_osm">
+              <span>OpenStreetMapにも追加したい</span>
+            </label>
+            <p class="small-note">サイトからOSMへ自動投稿はしません。OSMへの保存にはOpenStreetMapアカウントが必要です。</p>
+            <div id="new-osm-link-panel" class="new-osm-link-panel" hidden>
+              <a id="new-osm-edit-link" class="osm-action-button" target="_blank" rel="noopener noreferrer" hidden>↗ 選択位置をOpenStreetMapで編集する</a>
+              <p id="new-osm-link-status" class="small-note">先に地図で追加地点を選んでください。</p>
+            </div>
+          </section>
+
           <section id="osm-reference-context" class="reference-context" hidden aria-live="polite">
-            <h3>OSM参考地点からの確認・修正</h3>
-            <p>OpenStreetMapに登録されている内容を、そのまま確認せず再投稿しないでください。現地確認、施設への問い合わせ、公式情報等によって確認した内容を入力してください。</p>
+            <span class="readonly-badge">参考情報・未確認・編集不可</span>
+            <h3>OpenStreetMapに登録されている参考情報</h3>
+            <p>この欄はODbLの参考データです。YOKOZE AtlasのCC0公開データではなく、下の確認情報欄へ自動コピーされません。</p>
             <dl>
               <div>
                 <dt>OSM ID</dt>
@@ -161,17 +208,43 @@
                 <dd id="osm-context-coordinates">未確認</dd>
               </div>
               <div>
-                <dt>OSM属性</dt>
+                <dt>access</dt>
+                <dd id="osm-context-access">未確認</dd>
+              </div>
+              <div>
+                <dt>fee</dt>
+                <dd id="osm-context-fee">未確認</dd>
+              </div>
+              <div>
+                <dt>wheelchair</dt>
+                <dd id="osm-context-wheelchair">未確認</dd>
+              </div>
+              <div>
+                <dt>opening_hours</dt>
+                <dd id="osm-context-opening-hours">未確認</dd>
+              </div>
+              <div>
+                <dt>changing_table</dt>
+                <dd id="osm-context-changing-table">未確認</dd>
+              </div>
+              <div class="reference-tags-row">
+                <dt>その他のOSMタグ</dt>
                 <dd><code id="osm-context-tags">未確認</code></dd>
               </div>
             </dl>
           </section>
           <input id="osm-id" name="osmId" type="hidden">
+          <input id="osm-name" name="osmName" type="hidden">
           <input id="osm-latitude" name="osmLatitude" type="hidden">
           <input id="osm-longitude" name="osmLongitude" type="hidden">
           <input id="osm-attributes" name="osmAttributes" type="hidden">
           <input id="reference-verification-status" name="referenceVerificationStatus" type="hidden" value="reference">
-          <label>施設名 <span class="required">必須</span>
+
+          <div class="confirmed-information-heading">
+            <h3>利用者が確認した情報</h3>
+            <p>確認していない項目は「未確認」のままにしてください。OSM参考値は自動入力されません。</p>
+          </div>
+          <label>確認後の施設名 <span class="required">必須</span>
             <input id="facility-name" name="facilityName" type="text" maxlength="80" required>
           </label>
           <label>施設種別 <span class="required">必須</span>
@@ -189,14 +262,14 @@
             </select>
           </label>
           <div class="position-tools">
-            <button type="button" id="pick-position" class="secondary-button">地図クリックで位置指定</button>
-            <p id="position-help">地図上をクリックすると仮マーカーを配置できます。マーカーはドラッグで移動できます。</p>
+            <button type="button" id="pick-position" class="secondary-button">地図クリックで確認位置を指定</button>
+            <p id="position-help">地図上で確認した位置を選びます。仮マーカーはドラッグで移動できます。</p>
           </div>
           <div class="field-grid">
-            <label>緯度 <span class="required">必須</span>
+            <label>確認した緯度 <span class="required">必須</span>
               <input id="latitude" name="latitude" type="number" min="-90" max="90" step="0.000001" required>
             </label>
-            <label>経度 <span class="required">必須</span>
+            <label>確認した経度 <span class="required">必須</span>
               <input id="longitude" name="longitude" type="number" min="-180" max="180" step="0.000001" required>
             </label>
           </div>
@@ -205,6 +278,13 @@
 
         <fieldset>
           <legend>利用条件</legend>
+          <label>トイレの存在
+            <select id="toilet-exists" name="toiletExists">
+              <option value="unknown">未確認</option>
+              <option value="yes">存在を確認</option>
+              <option value="no">存在しないことを確認</option>
+            </select>
+          </label>
           <label>一般利用の可否
             <select id="access" name="access">
               <option value="unknown">未確認</option>

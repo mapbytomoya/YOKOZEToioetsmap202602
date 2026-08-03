@@ -5,6 +5,7 @@
 ## 対象ファイル
 
 - `YOKOZEatlas2026_reference_toilets_v0.1.0.geojson`
+- `osm_toilet_candidates.geojson`（OSM由来候補19件の表示用複製）
 
 ## データ提供元
 
@@ -37,4 +38,3 @@ OpenStreetMap由来の座標は ODbL 1.0 の対象です。YOKOZE Atlas 2026 リ
 地図上およびドキュメントでは、次の帰属表示を行います。
 
 `© OpenStreetMap contributors`
-

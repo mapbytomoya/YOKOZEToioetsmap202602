@@ -83,14 +83,14 @@ const labels = {
   unisex: "共用",
   mixed: "男女別あり",
   reference: "参考・未確認",
-  submitted: "投稿済み・確認待ち",
+  submitted: "提供済み・確認待ち",
   verified: "確認済み・CC0公開対象",
   osm_reference: "OSM参考照合",
   official_web: "公式Web",
   phone: "電話",
   email: "メール",
   field_survey: "現地調査",
-  user_submission: "利用者投稿",
+  user_submission: "利用者による情報提供",
   atlas: "YOKOZE Atlasへ確認情報を提供",
   atlas_and_osm: "YOKOZE Atlasへ提供し、OpenStreetMapにも追加"
 };
@@ -236,6 +236,11 @@ function setStatus(message, isError = false) {
   target.classList.toggle("error-message", isError);
 }
 
+function updateParticipationCounts(referenceCount, verifiedCount) {
+  $("#reference-count").textContent = String(referenceCount);
+  $("#verified-count").textContent = String(verifiedCount);
+}
+
 function initMap() {
   maplibregl.setRTLTextPlugin(
     "https://unpkg.com/@mapbox/mapbox-gl-rtl-text@0.3.0/dist/mapbox-gl-rtl-text.js",
@@ -331,7 +336,8 @@ async function loadToiletLayers() {
     addPointLayer("reference-toilets", referenceDataCache, "OSM参考", "layer-osm-reference");
     addPointLayer("verified-toilets", verifiedDataCache, "確認済み", "layer-verified");
     const total = referenceDataCache.features.length + verifiedDataCache.features.length;
-    setStatus(`表示中: reference ${referenceDataCache.features.length}件、verified ${verifiedDataCache.features.length}件。合計 ${total}件。`);
+    updateParticipationCounts(referenceDataCache.features.length, verifiedDataCache.features.length);
+    setStatus(`地域データ候補 ${total}件を表示しています。未確認地点を選ぶと、更新に参加できます。`);
     fitInitialReferenceBounds();
   } catch (error) {
     setStatus("トイレ候補データを読み込めませんでした。", true);
@@ -510,6 +516,57 @@ function addPointLayer(id, data, shortLabel, visibilityCheckboxId) {
   }
 }
 
+function createReferenceUpdatePanel(feature, osmId, coordinates) {
+  const panel = document.createElement("section");
+  panel.className = "popup-update-panel";
+
+  const heading = document.createElement("h3");
+  heading.textContent = "この場所を更新する";
+  const lead = document.createElement("p");
+  lead.className = "popup-update-lead";
+  lead.textContent = "この地点はまだ独立確認されていません。あなたの確認が地域データを育てます。";
+
+  const actionGroup = document.createElement("div");
+  actionGroup.className = "popup-action-group";
+
+  const osmChoice = document.createElement("section");
+  osmChoice.className = "popup-choice osm-choice";
+  const osmHeading = document.createElement("h4");
+  osmHeading.textContent = "OpenStreetMapで更新";
+  const osmDescription = document.createElement("p");
+  osmDescription.textContent = "位置や基本情報を共同編集します。OSMアカウントが必要です。";
+  const osmEditLink = document.createElement("a");
+  osmEditLink.className = "osm-action-button popup-action";
+  osmEditLink.href = buildOsmEditUrl(osmId, coordinates[1], coordinates[0]);
+  osmEditLink.target = "_blank";
+  osmEditLink.rel = "noopener noreferrer";
+  osmEditLink.textContent = "↗ OpenStreetMapで編集する";
+  const osmAccountNote = document.createElement("small");
+  osmAccountNote.textContent = "更新内容はODbLで共有されます";
+  osmChoice.append(osmHeading, osmDescription, osmEditLink, osmAccountNote);
+
+  const atlasChoice = document.createElement("section");
+  atlasChoice.className = "popup-choice atlas-choice";
+  const atlasHeading = document.createElement("h4");
+  atlasHeading.textContent = "確認した情報を提供";
+  const atlasDescription = document.createElement("p");
+  atlasDescription.textContent = "現地確認や施設への問い合わせで確認した内容を提供します。確認後にCC0データへ追加されます。";
+  const provideButton = document.createElement("button");
+  provideButton.type = "button";
+  provideButton.className = "primary-button popup-action";
+  provideButton.textContent = "✎ 確認した情報を提供する";
+  provideButton.addEventListener("click", () => {
+    openEditSubmission(feature);
+  });
+  const atlasLoginNote = document.createElement("small");
+  atlasLoginNote.textContent = "下書き作成はログイン不要・管理者確認後に公開";
+  atlasChoice.append(atlasHeading, atlasDescription, provideButton, atlasLoginNote);
+
+  actionGroup.append(osmChoice, atlasChoice);
+  panel.append(heading, lead, actionGroup);
+  return panel;
+}
+
 function createPopupContent(feature) {
   const properties = feature.properties || {};
   const osmTags = getOsmOriginalTags(properties);
@@ -519,6 +576,15 @@ function createPopupContent(feature) {
   const wheelchairStatus = normalizeWheelchairValue(properties.wheelchair_status || properties.wheelchair);
   const wrapper = document.createElement("article");
   wrapper.className = "popup-card";
+
+  if (status === "reference") {
+    wrapper.append(createReferenceUpdatePanel(feature, osmId, coordinates));
+  }
+
+  const informationHeading = document.createElement("p");
+  informationHeading.className = "popup-information-heading";
+  informationHeading.textContent = status === "reference" ? "現在登録されている参考情報" : "地点情報";
+  wrapper.append(informationHeading);
 
   const title = document.createElement("h3");
   title.textContent = toDisplay(properties.name);
@@ -547,7 +613,7 @@ function createPopupContent(feature) {
     ? "OpenStreetMap参考データ｜ライセンス：ODbL 1.0｜YOKOZE AtlasのCC0公開データではありません"
     : status === "verified"
       ? "YOKOZE Atlas確認済みデータ｜ライセンス：CC0 1.0"
-      : "投稿・取込データ｜管理者確認前・自動公開されません";
+      : "提供・取込データ｜管理者確認前・自動公開されません";
   wrapper.append(licenseNotice);
 
   const rows = [
@@ -611,40 +677,6 @@ function createPopupContent(feature) {
     tagDetails.append(summary, tagTable);
     wrapper.append(tagDetails);
 
-    const actionGroup = document.createElement("div");
-    actionGroup.className = "popup-action-group";
-
-    const osmChoice = document.createElement("section");
-    osmChoice.className = "popup-choice osm-choice";
-    const osmDescription = document.createElement("p");
-    osmDescription.textContent = "OpenStreetMap上の名称、位置、設備タグなどを編集します。変更の保存にはOpenStreetMapアカウントが必要です。";
-    const osmEditLink = document.createElement("a");
-    osmEditLink.className = "osm-action-button popup-action";
-    osmEditLink.href = buildOsmEditUrl(osmId, coordinates[1], coordinates[0]);
-    osmEditLink.target = "_blank";
-    osmEditLink.rel = "noopener noreferrer";
-    osmEditLink.textContent = "↗ OpenStreetMapで編集する";
-    const osmAccountNote = document.createElement("small");
-    osmAccountNote.textContent = "OSMアカウントが必要・編集内容はODbLで共有";
-    osmChoice.append(osmDescription, osmEditLink, osmAccountNote);
-
-    const atlasChoice = document.createElement("section");
-    atlasChoice.className = "popup-choice atlas-choice";
-    const atlasDescription = document.createElement("p");
-    atlasDescription.textContent = "現地調査や施設への問い合わせで確認した情報をYOKOZE Atlasへ提供します。";
-    const provideButton = document.createElement("button");
-    provideButton.type = "button";
-    provideButton.className = "primary-button popup-action";
-    provideButton.textContent = "✎ 確認した情報を提供する";
-    provideButton.addEventListener("click", () => {
-      openEditSubmission(feature);
-    });
-    const atlasLoginNote = document.createElement("small");
-    atlasLoginNote.textContent = "情報提供用の下書き作成はログイン不要・確認後に反映";
-    atlasChoice.append(atlasDescription, provideButton, atlasLoginNote);
-
-    actionGroup.append(osmChoice, atlasChoice);
-    wrapper.append(actionGroup);
   }
 
   if (properties.source_url) {
@@ -907,12 +939,12 @@ ${markdownValue(data.osmAttributes, "{}")}
 
   return `## 基本情報
 
-- 投稿種別: ${typeLabel}
+- 情報提供の種類: ${typeLabel}
 - 希望する更新経路: ${toDisplay(data.submissionDestination)}
 - 施設名: ${markdownValue(data.facilityName)}
 - 施設種別: ${markdownValue(data.category)}
-- 投稿者が確認した緯度: ${data.latitude.toFixed(6)}
-- 投稿者が確認した経度: ${data.longitude.toFixed(6)}
+- 提供者が確認した緯度: ${data.latitude.toFixed(6)}
+- 提供者が確認した経度: ${data.longitude.toFixed(6)}
 
 ${osmBlock}## 利用条件
 
@@ -943,14 +975,14 @@ ${osmBlock}## 利用条件
 
 ## 管理者確認メモ
 
-- 投稿直後は地図へ自動表示しない
+- 情報提供直後は地図へ自動表示しない
 - 確認後にのみ \`data/verified/\` のCC0用GeoJSONへ追加する
-- 既存地点の確認・修正の場合、OSM座標と投稿者確認座標を分けて確認する
+- 既存地点の確認・修正の場合、OSM座標と提供者確認座標を分けて確認する
 - Google Maps等からの転用がないか確認する`;
 }
 
 function buildSubmissionTitle(data) {
-  const titlePrefix = data.submissionType === "edit_existing" ? "トイレ情報確認・修正" : "トイレ情報投稿";
+  const titlePrefix = data.submissionType === "edit_existing" ? "トイレ情報確認・修正" : "トイレ情報提供";
   return `横瀬町${titlePrefix}: ${data.facilityName}`;
 }
 
@@ -975,7 +1007,7 @@ function buildMailtoUrl(data) {
     body: `${buildSubmissionText(data)}
 
 ---
-送信前に、宛先が横瀬町トイレアクセスマップの管理者・担当者になっているか確認してください。`
+送信前に、宛先が横瀬トイレデータプロジェクトの管理者・担当者になっているか確認してください。`
   });
   return `mailto:${encodeURIComponent(SUBMISSION_EMAIL)}?${params.toString()}`;
 }
@@ -1039,14 +1071,14 @@ function buildDraftFeature(data) {
 function buildDraftSvg(data) {
   const name = xmlEscape(data.facilityName);
   const status = "submitted";
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="360" height="140" viewBox="0 0 360 140" role="img" aria-label="${name} 投稿下書き">
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="360" height="140" viewBox="0 0 360 140" role="img" aria-label="${name} 情報提供下書き">
   <rect width="360" height="140" rx="8" fill="#ffffff"/>
   <circle cx="48" cy="48" r="20" fill="#3478c0"/>
   <text x="48" y="55" text-anchor="middle" font-size="24" font-family="sans-serif" fill="#ffffff">T</text>
   <text x="82" y="42" font-size="18" font-family="sans-serif" font-weight="700" fill="#17201b">${name}</text>
   <text x="82" y="70" font-size="13" font-family="sans-serif" fill="#546159">status: ${status}</text>
   <text x="82" y="94" font-size="13" font-family="sans-serif" fill="#546159">lat: ${data.latitude.toFixed(6)}, lng: ${data.longitude.toFixed(6)}</text>
-  <text x="82" y="116" font-size="12" font-family="sans-serif" fill="#b64242">未確認投稿。管理者確認前は正式データではありません。</text>
+  <text x="82" y="116" font-size="12" font-family="sans-serif" fill="#b64242">未確認情報。管理者確認前は正式データではありません。</text>
 </svg>`;
 }
 
@@ -1087,7 +1119,7 @@ async function shareOrCopySubmission(data) {
   if (navigator.share) {
     try {
       await navigator.share({ title, text });
-      showSubmissionStatus("共有メニューを開きました。送信先を選んで投稿してください。");
+      showSubmissionStatus("共有メニューを開きました。送信先を選んで情報を提供してください。");
       return;
     } catch (error) {
       if (error.name === "AbortError") return;
@@ -1097,9 +1129,9 @@ async function shareOrCopySubmission(data) {
 
   try {
     await copyTextToClipboard(text);
-    showSubmissionStatus("投稿文をコピーしました。メール、チャット、フォームなどに貼り付けて送れます。");
+    showSubmissionStatus("情報提供文をコピーしました。メール、チャット、フォームなどに貼り付けて送れます。");
   } catch (error) {
-    showSubmissionStatus("投稿文を下書き欄に生成しました。内容を選択してコピーしてください。", true);
+    showSubmissionStatus("情報提供文を下書き欄に生成しました。内容を選択してコピーしてください。", true);
   }
 }
 
@@ -1316,7 +1348,7 @@ function bindUi() {
     const data = validateSubmission();
     if (!data) return;
     $("#draft-output").value = buildSubmissionText(data);
-    showSubmissionStatus("投稿文を生成しました。共有・コピー・メール送信に使えます。");
+    showSubmissionStatus("情報提供文を生成しました。共有・コピー・メール送信に使えます。");
   });
 
   $("#make-draft-geojson").addEventListener("click", () => {

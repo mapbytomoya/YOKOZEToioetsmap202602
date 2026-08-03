@@ -22,7 +22,7 @@
   - [YOKOZE Spatial Data Infrastructure(YSDI)](https://github.com/furuhashilab/YOKOZEatlas2026/issues/4)
   - [MORIGAWA 流域 Maps](https://github.com/furuhashilab/YOKOZEatlas2026/issues/3)
   - [DRONEBIRD 防災減災 Maps](https://github.com/furuhashilab/YOKOZEatlas2026/issues/5)
-  - [横瀬町トイレアクセスマップ](toilet-access-map/)
+  - [横瀬トイレデータプロジェクト](toilet-access-map/)
 
 
 ## 連携プロジェクト
@@ -30,13 +30,21 @@
 * 災害ドローン救援隊 DRONEBIRD https://dronebird.org
 * その他いろいろ
 
-## 横瀬町トイレアクセスマップ試作版
+## 横瀬トイレデータプロジェクト試作版
 
-`toilet-access-map/` に、横瀬町で利用可能なトイレ情報を市民参加型で投稿・確認・公開していくためのWeb地図試作版を追加しています。
+`toilet-access-map/` に、横瀬町で利用可能なトイレ情報を市民参加で確認・更新・公開していくためのWeb地図試作版を追加しています。
+
+### このプロジェクトについて
+
+本プロジェクトは横瀬町のトイレマップを完成させることが目的ではありません。
+
+市民参加によって地域情報を継続的に整備するための仕組みを設計し、その実証としてトイレ情報を対象にしています。
+
+OpenStreetMapの共同編集性と、CC0による公開データ整備を組み合わせることで、閉鎖的ではない地域オープンデータ基盤を目指します。トイレは最初のケーススタディであり、将来はAED、避難所、ベンチ、給水所、バリアフリー設備などへの展開を想定しています。
 
 現時点では完成済みの網羅的地図ではありません。OpenStreetMap由来の候補19件を `reference` として表示し、そのうちウォーターパーク・シラヤマも未確認の参考地点として扱います。正確な入口位置、設備、トイレ固有の利用時間は未確認です。
 
-投稿情報はコピー、メール、共有、GitHub Issue等で受け取り、管理者確認後にのみ `data/verified/` のCC0公開GeoJSONへ追加します。OSM参考データは `data/reference/` に分離しており、ルートCC0ライセンスの適用対象外です。
+提供情報はコピー、メール、共有、GitHub Issue等で受け取り、管理者確認後にのみ `data/verified/` のCC0公開GeoJSONへ追加します。OSM参考データは `data/reference/` に分離しており、ルートCC0ライセンスの適用対象外です。
 
 ## 現在の位置づけ
 
@@ -54,4 +62,4 @@ OSMで編集されたデータはODbLとして共有されます。YOKOZE Atlas�
 - **OSM参考レイヤー**: OpenStreetMapから抽出した候補地点です。ODbL 1.0で扱い、位置・設備・利用条件はYOKOZE Atlasとして独立確認していません。YOKOZE AtlasのCC0公開データには含めません。
 - **YOKOZE Atlas確認済みレイヤー**: 現地調査、施設への問い合わせ、行政・施設管理者からの提供等により独立確認し、権利とCC0公開への同意を確認した情報です。CC0 1.0 Universalで公開します。現在は0件です。
 
-OSMの参考情報をCC0へ自動転記することはありません。OSMを更新する場合はOpenStreetMap上で編集し、YOKOZE Atlasへ情報提供する場合は投稿者が自分で確認した内容を別途入力します。
+OSMの参考情報をCC0へ自動転記することはありません。OSMを更新する場合はOpenStreetMap上で編集し、YOKOZE Atlasへ情報提供する場合は提供者が自分で確認した内容を別途入力します。

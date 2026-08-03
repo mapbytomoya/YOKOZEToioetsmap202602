@@ -1,4 +1,60 @@
 {
   "type": "FeatureCollection",
-  "features": []
+  "features": [
+    {
+      "type": "Feature",
+      "id": "submitted-issue-2",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          139.102226,
+          35.986812
+        ]
+      },
+      "properties": {
+        "id": "submitted-issue-2",
+        "name": "Area898のトイレ",
+        "category": "public_facility",
+        "longitude": 139.102226,
+        "latitude": 35.986812,
+        "toilet_exists": "yes",
+        "access": "public",
+        "access_note": "購入・施設利用: unknown; 声掛け: unknown",
+        "facility_opening_hours": "unknown",
+        "toilet_opening_hours": "24/7",
+        "fee": "unknown",
+        "exterior_note": "unknown",
+        "flush_type": "unknown",
+        "toilet_style": "unknown",
+        "equipment_note": "unknown",
+        "wheelchair": "unknown",
+        "changing_table": "unknown",
+        "ostomy": "unknown",
+        "gender": "unknown",
+        "verification_status": "submitted",
+        "submission_type": "既存OSM地点の確認情報提供",
+        "submission_destination": "YOKOZE Atlasへ確認情報を提供",
+        "source_osm_id": "node/6387436985",
+        "source_osm_name": "unknown",
+        "verification_method": "user_submission",
+        "verification_date": "2026-08-03",
+        "source_name": "user_submission",
+        "source_url": "https://github.com/mapbytomoya/YOKOZEToioetsmap202602/issues/2",
+        "source_license": "user_submission; pending verification",
+        "coordinate_source": "GitHub Issue submission",
+        "data_license": "pending verification; not published as CC0",
+        "cc0_eligible": false,
+        "cc0_publication_consent": true,
+        "automated_intake": true,
+        "source_issue_number": 2,
+        "source_issue_url": "https://github.com/mapbytomoya/YOKOZEToioetsmap202602/issues/2",
+        "source_issue_author": "mapbytomoya",
+        "source_issue_state": "open",
+        "source_issue_created_at": "2026-08-03T05:18:54Z",
+        "source_issue_updated_at": "2026-08-03T05:18:54Z",
+        "automation_updated_at": "2026-08-03T05:19:06+00:00",
+        "notes": "unknown"
+      }
+    }
+  ]
 }

@@ -15,7 +15,12 @@ assert.deepEqual(missingIds, [], `HTMLに存在しないID: ${missingIds.join(",
 assert.equal(reference.type, "FeatureCollection");
 assert.equal(reference.features.length, 19);
 assert.equal(submitted.type, "FeatureCollection");
-assert.equal(submitted.features.length, 0);
+assert(Array.isArray(submitted.features));
+submitted.features.forEach((feature) => {
+  assert.equal(feature.geometry?.type, "Point");
+  assert.equal(feature.properties?.verification_status, "submitted");
+  assert.equal(feature.properties?.cc0_eligible, false);
+});
 assert.equal(verified.type, "FeatureCollection");
 assert.equal(verified.features.length, 0);
 

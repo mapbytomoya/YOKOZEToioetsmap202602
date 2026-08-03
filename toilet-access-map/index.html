@@ -19,8 +19,7 @@
           <h1>横瀬トイレデータプロジェクト</h1>
         </div>
         <div class="topbar-actions">
-          <a class="osm-action-button top-action-button" href="https://www.openstreetmap.org/note/new#map=13/35.986/139.106&amp;layers=N" target="_blank" rel="noopener noreferrer">＋ OSMへ匿名メモを残す</a>
-          <button type="button" id="open-form" class="primary-button">＋ 新しいトイレ地点を登録する</button>
+          <button type="button" id="open-update-router" class="primary-button top-action-button">＋ トイレ情報を更新する</button>
           <button type="button" id="open-import" class="ghost-button">取り込み</button>
         </div>
       </header>
@@ -223,6 +222,61 @@
         <span>追加レイヤー: ライセンスは読み込んだデータの提供条件に従ってください</span>
       </footer>
     </div>
+
+    <dialog id="update-route-dialog" class="sheet-dialog route-dialog" aria-labelledby="update-route-title">
+      <form method="dialog">
+        <div class="dialog-header">
+          <div>
+            <p class="eyebrow">地域データの更新を始める</p>
+            <h2 id="update-route-title">どの情報を更新しますか？</h2>
+          </div>
+          <button type="button" class="icon-button" data-close-dialog aria-label="閉じる">×</button>
+        </div>
+
+        <section id="update-kind-step" class="route-step" aria-labelledby="update-kind-title">
+          <div>
+            <p class="step-number">STEP 1</p>
+            <h3 id="update-kind-title">新規登録か、既存情報の編集かを選択</h3>
+          </div>
+          <div class="update-kind-grid">
+            <button type="button" class="update-choice-card" data-update-kind="new">
+              <strong>＋ 新しいトイレを登録</strong>
+              <span>地図上で新しい場所を指定します</span>
+            </button>
+            <button type="button" class="update-choice-card" data-update-kind="existing">
+              <strong>✎ 既存のトイレ情報を編集</strong>
+              <span>次に地図上の既存ピンを選びます</span>
+            </button>
+          </div>
+        </section>
+
+        <section id="update-method-step" class="route-step" aria-labelledby="update-method-title" hidden>
+          <button type="button" id="back-to-update-kind" class="text-button">← 種類を選び直す</button>
+          <div>
+            <p class="step-number">STEP 2</p>
+            <h3 id="update-method-title"><span id="selected-update-kind">選択した情報</span>の更新方法</h3>
+          </div>
+          <div class="update-method-grid">
+            <button type="button" class="method-choice-card osm-edit-method" data-update-method="osm_edit">
+              <strong>↗ OSMで直接編集</strong>
+              <span>位置や基本情報を編集</span>
+              <small>OSMアカウントが必要・ODbL</small>
+            </button>
+            <button type="button" class="method-choice-card osm-note-method" data-update-method="osm_note">
+              <strong>⌖ OSMメモを残す</strong>
+              <span>マッパーへ確認事項を伝える</span>
+              <small>アカウント不要</small>
+            </button>
+            <button type="button" class="method-choice-card github-method" data-update-method="github_issue">
+              <strong>● GitHub Issueで更新</strong>
+              <span>確認情報を青いピンへ自動反映</span>
+              <small>GitHubログインが必要・CC0未収録</small>
+            </button>
+          </div>
+          <p id="update-route-help" class="notice" role="status"></p>
+        </section>
+      </form>
+    </dialog>
 
     <dialog id="submission-dialog" class="sheet-dialog" aria-labelledby="form-title">
       <form id="toilet-form" method="dialog" novalidate>

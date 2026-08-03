@@ -22,6 +22,8 @@ assert.equal(verified.features.length, 0);
 for (const id of [
   "layer-submitted", "submitted-count", "new-osm-note-panel", "new-osm-note-link",
   "exterior-note", "flush-type", "toilet-style", "equipment-note",
+  "open-update-router", "update-route-dialog", "update-kind-step", "update-method-step",
+  "selected-update-kind", "back-to-update-kind",
 ]) {
   assert(htmlIds.has(id), `${id} がありません`);
 }
@@ -32,5 +34,12 @@ assert(app.includes("mapbytomoya/YOKOZEToioetsmap202602/issues/new"));
 assert(app.includes("verification_status: \"submitted\""));
 assert(html.includes("Actionsが確認待ち地図へ自動反映"));
 assert(html.includes("新規メモはアカウント不要"));
+assert(html.includes('data-update-kind="new"'));
+assert(html.includes('data-update-kind="existing"'));
+assert(html.includes('data-update-method="osm_edit"'));
+assert(html.includes('data-update-method="osm_note"'));
+assert(html.includes('data-update-method="github_issue"'));
+assert(app.includes("runExistingPointAction"));
+assert(app.includes('new maplibregl.Popup({ maxWidth: "760px" })'));
 
 console.log("site integration: ok");

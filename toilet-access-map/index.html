@@ -19,8 +19,8 @@
           <h1>横瀬トイレデータプロジェクト</h1>
         </div>
         <div class="topbar-actions">
-          <a class="osm-action-button top-action-button" href="https://www.openstreetmap.org/edit?editor=id#map=13/35.986/139.106" target="_blank" rel="noopener noreferrer">↗ OpenStreetMapを更新する</a>
-          <button type="button" id="open-form" class="primary-button">✎ 確認した情報を提供する</button>
+          <a class="osm-action-button top-action-button" href="https://www.openstreetmap.org/note/new#map=13/35.986/139.106&amp;layers=N" target="_blank" rel="noopener noreferrer">＋ OSMへ匿名メモを残す</a>
+          <button type="button" id="open-form" class="primary-button">＋ 新しいトイレ地点を登録する</button>
           <button type="button" id="open-import" class="ghost-button">取り込み</button>
         </div>
       </header>
@@ -34,8 +34,9 @@
           <p>現在表示している地点の多くはOpenStreetMap由来の参考情報です。現地確認や施設への問い合わせで確認された情報だけを、管理者確認後にCC0で公開していきます。</p>
           <ul class="compact-list">
             <li>誰でも情報提供できます</li>
-            <li>誰でもOpenStreetMapを更新できます（OSMアカウントが必要です）</li>
-            <li>確認済みデータは管理者確認後に公開されます</li>
+            <li>新しいトイレはOSMへアカウントなしでメモを残せます</li>
+            <li>GitHub Issueの確認待ちデータはActionsが自動反映します</li>
+            <li>確認済みCC0データへの昇格だけは権利確認後に行います</li>
           </ul>
         </section>
 
@@ -45,22 +46,22 @@
           <div class="route-cards">
             <article class="route-card osm-route-card">
               <span class="route-icon" aria-hidden="true">↗</span>
-              <h3>OpenStreetMapを更新する</h3>
-              <p>OSM上の位置や基本情報を共同編集します。</p>
+              <h3>OpenStreetMapへメモを残す</h3>
+              <p>新しいトイレや不足情報を、マッパーへ知らせます。</p>
               <ul>
-                <li>OSMアカウントが必要</li>
-                <li>ODbLで共有</li>
-                <li>他のOSM利用者にも引き継がれる</li>
+                <li>新規メモはアカウント不要</li>
+                <li>メモを見たマッパーが確認・編集</li>
+                <li>更新後のOSMデータはODbL</li>
               </ul>
             </article>
             <article class="route-card atlas-route-card">
               <span class="route-icon" aria-hidden="true">✎</span>
               <h3>確認した情報を提供する</h3>
-              <p>現地調査や問い合わせで確認した情報をYOKOZE Atlasへ提供します。</p>
+              <p>既存地点の確認情報を提供したり、新しいトイレ地点に仮ピンを置いたりできます。</p>
               <ul>
-                <li>下書き作成はログイン不要</li>
-                <li>管理者による確認あり</li>
-                <li>採用情報はCC0で公開</li>
+                <li>GitHub Issueを受付口にする</li>
+                <li>Actionsが確認待ち地図へ自動反映</li>
+                <li>権利確認済み情報だけCC0へ昇格</li>
               </ul>
             </article>
           </div>
@@ -74,6 +75,11 @@
               <span>未確認地点</span>
               <strong id="reference-count">—</strong>
               <small>OpenStreetMap由来の調査候補</small>
+            </article>
+            <article class="stat-card submitted-stat">
+              <span>確認待ち地点</span>
+              <strong id="submitted-count">—</strong>
+              <small>Issueから自動反映された青いピン</small>
             </article>
             <article class="stat-card verified-stat">
               <span>確認済み地点</span>
@@ -93,24 +99,28 @@
             <article class="data-path osm-data-path">
               <strong>OpenStreetMap</strong>
               <span aria-hidden="true">↓</span>
-              <span>共同編集</span>
+              <span>匿名メモ</span>
+              <span aria-hidden="true">↓</span>
+              <span>マッパーが確認・編集</span>
               <span aria-hidden="true">↓</span>
               <b>ODbL</b>
             </article>
             <article class="data-path atlas-data-path">
               <strong>YOKOZE Atlas</strong>
               <span aria-hidden="true">↓</span>
-              <span>現地確認</span>
+              <span>GitHub Issue</span>
               <span aria-hidden="true">↓</span>
-              <span>管理者確認</span>
+              <span>Actions自動検査・確認待ち公開</span>
+              <span aria-hidden="true">↓</span>
+              <span>権利・内容確認</span>
               <span aria-hidden="true">↓</span>
               <b>CC0公開</b>
             </article>
           </div>
           <details>
             <summary>データと更新方法を詳しく見る</summary>
-            <p>OSM参考地点はODbL 1.0、YOKOZE Atlas確認済みデータはCC0 1.0として分けて扱います。OSMを更新してもAtlasのCC0データへ自動移行せず、Atlasへの提供内容も自動公開されません。</p>
-            <p>OSMでは現地で確認できた内容だけを更新し、他の地図サービスから情報をコピーしないでください。存在や重複が不明な地点を推測で削除・統合しないでください。</p>
+            <p>OSM参考地点はODbL 1.0、Issueから自動生成した確認待ち地点はCC0未収録、YOKOZE Atlas確認済みデータはCC0 1.0として分けて扱います。</p>
+            <p>新規OSMメモはログインなしで残せます。メモだけを根拠に機械的な編集は行わず、地域のマッパーが内容と現地状況を確認してOSMを更新します。</p>
           </details>
         </section>
 
@@ -130,8 +140,10 @@
           <ol class="flow-list">
             <li>地図でトイレの場所を選ぶ</li>
             <li>確認した情報を入力する</li>
-            <li>コピー、メール、共有、GitHubで送る</li>
-            <li>内容確認後に地図へ反映される</li>
+            <li>GitHub Issueで送る、またはOSMへ匿名メモを残す</li>
+            <li>IssueはActionsが青い確認待ちピンへ自動反映する</li>
+            <li>OSMメモはマッパーが確認して地図を更新する</li>
+            <li>権利確認済み情報だけCC0データへ昇格する</li>
           </ol>
           <details class="admin-details">
             <summary>管理者による確認内容</summary>
@@ -183,6 +195,10 @@
             <span>OSM参考候補</span>
           </label>
           <label class="toggle-row">
+            <input type="checkbox" id="layer-submitted" checked>
+            <span>Issue確認待ち</span>
+          </label>
+          <label class="toggle-row">
             <input type="checkbox" id="layer-verified" checked>
             <span>確認済みCC0</span>
           </label>
@@ -202,6 +218,7 @@
         <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a>
         <span id="basemap-credit">背景地図: OpenFreeMap</span>
         <span>OSMトイレ参考候補データ: ODbL 1.0</span>
+        <span>Issue確認待ちデータ: CC0未収録</span>
         <span>確認済みデータ: CC0 1.0</span>
         <span>追加レイヤー: ライセンスは読み込んだデータの提供条件に従ってください</span>
       </footer>
@@ -212,20 +229,20 @@
         <div class="dialog-header">
           <div>
             <p class="eyebrow">誰でも情報提供できます · 下書き作成はログイン不要</p>
-            <h2 id="form-title">新しいトイレ情報を提供する</h2>
+            <h2 id="form-title">新しいトイレ地点を登録する</h2>
           </div>
           <button type="button" class="icon-button" data-close-dialog aria-label="閉じる">×</button>
         </div>
 
         <p class="notice notice-strong">このフォームは、OpenStreetMapの情報をコピーするためのものではありません。現地で確認した内容、施設管理者へ問い合わせた内容、または提供を受けた情報を入力してください。</p>
-        <p class="notice">入力内容はすぐには地図へ公開されません。管理者・ゼミ生が位置、重複、情報源、利用条件、ライセンスを確認した後、採用された情報だけがCC0データへ追加されます。</p>
-        <p class="notice">下書きはコピー、共有、メールで管理者へ送れます。GitHub Issueを利用する場合のみGitHubへのログインが必要です。</p>
+        <p class="notice">GitHub Issueで送った内容は、Actionsが形式と座標を検査し、青い「確認待ち」ピンとして自動反映します。この段階ではCC0確認済みデータではありません。</p>
+        <p class="notice">下書きはコピー、共有、メールでも保存できます。GitHub Issueを利用する場合のみGitHubへのログインが必要です。新しいトイレのOSMメモはログインなしで残せます。</p>
         <p class="notice">個人情報、顔写真、車両ナンバー、私有地内部の情報は提供しないでください。</p>
 
         <fieldset>
           <legend>基本情報</legend>
           <input id="submission-type" name="submissionType" type="hidden" value="new">
-          <p class="form-value">情報提供の種類：<strong id="submission-type-label">新しいトイレ情報</strong></p>
+          <p class="form-value">情報提供の種類：<strong id="submission-type-label">新しいトイレ地点</strong></p>
 
           <section id="new-destination-options" class="destination-options" aria-labelledby="destination-title">
             <h3 id="destination-title">この情報をどこへ反映したいですか</h3>
@@ -234,13 +251,14 @@
               <span>YOKOZE Atlasへ確認情報を提供する</span>
             </label>
             <label class="radio-row">
-              <input type="radio" name="submissionDestination" value="atlas_and_osm">
-              <span>OpenStreetMapにも追加したい</span>
+              <input type="radio" name="submissionDestination" value="atlas_and_osm_note">
+              <span>YOKOZE Atlasへ提供し、OpenStreetMapへ匿名メモも残す</span>
             </label>
-            <p class="small-note">サイトからOSMへ自動登録はしません。OSMへの保存にはOpenStreetMapアカウントが必要です。</p>
-            <div id="new-osm-link-panel" class="new-osm-link-panel" hidden>
-              <a id="new-osm-edit-link" class="osm-action-button" target="_blank" rel="noopener noreferrer" hidden>↗ 選択位置をOpenStreetMapで編集する</a>
-              <p id="new-osm-link-status" class="small-note">先に地図で追加地点を選んでください。</p>
+            <p class="small-note">OSMへ直接データを書き込みません。匿名メモを見たマッパーが内容を確認し、必要に応じて地図を編集します。</p>
+            <p class="draft-pin-note"><strong>新しい地点も登録できます。</strong>下のボタンで青い仮ピンを置き、GitHub Issueを開くとActionsが確認待ちレイヤーへ自動反映します。</p>
+            <div id="new-osm-note-panel" class="new-osm-link-panel" hidden>
+              <a id="new-osm-note-link" class="osm-action-button" target="_blank" rel="noopener noreferrer" hidden>＋ 選択位置へOSM匿名メモを残す</a>
+              <p id="new-osm-note-status" class="small-note">先に地図で追加地点を選んでください。</p>
             </div>
           </section>
 
@@ -316,7 +334,7 @@
             </select>
           </label>
           <div class="position-tools">
-            <button type="button" id="pick-position" class="secondary-button">地図クリックで確認位置を指定</button>
+            <button type="button" id="pick-position" class="secondary-button">地図をクリックして新しいピンを置く</button>
             <p id="position-help">地図上で確認した位置を選びます。仮マーカーはドラッグで移動できます。</p>
           </div>
           <div class="field-grid">
@@ -354,14 +372,34 @@
           <label>職員や店員への声掛けの必要性
             <input id="permission-note" name="permissionNote" type="text" maxlength="120" placeholder="未確認">
           </label>
-          <label>利用可能時間
-            <input id="toilet-hours" name="toiletHours" type="text" maxlength="80" placeholder="unknown">
+          <label>トイレの利用可能時間・営業時間
+            <input id="toilet-hours" name="toiletHours" type="text" maxlength="80" placeholder="例：8:30〜17:30、24時間、未確認">
           </label>
         </fieldset>
 
         <fieldset>
-          <legend>設備</legend>
+          <legend>設備・外観</legend>
+          <label>外観・入口の特徴
+            <textarea id="exterior-note" name="exteriorNote" maxlength="240" rows="3" placeholder="例：駐車場奥の木造建物。入口は道路側。段差あり。未確認の場合は空欄で構いません。"></textarea>
+          </label>
           <div class="field-grid">
+            <label>水洗方式
+              <select id="flush-type" name="flushType">
+                <option value="unknown">未確認</option>
+                <option value="flush">水洗</option>
+                <option value="non_flush">非水洗</option>
+                <option value="other">その他</option>
+              </select>
+            </label>
+            <label>便器の形式
+              <select id="toilet-style" name="toiletStyle">
+                <option value="unknown">未確認</option>
+                <option value="western">洋式</option>
+                <option value="japanese">和式</option>
+                <option value="both">洋式・和式あり</option>
+                <option value="other">その他</option>
+              </select>
+            </label>
             <label>車いす対応
               <select id="wheelchair" name="wheelchair">
                 <option value="unknown">未確認</option>
@@ -394,6 +432,9 @@
               </select>
             </label>
           </div>
+          <label>その他の設備・特徴
+            <textarea id="equipment-note" name="equipmentNote" maxlength="320" rows="3" placeholder="例：手すり、子ども用便座、荷物台、入口の段差など。未確認の場合は空欄で構いません。"></textarea>
+          </label>
         </fieldset>
 
         <fieldset>
@@ -448,7 +489,7 @@
           <button type="button" data-close-dialog class="ghost-button">閉じる</button>
           <button type="submit" class="primary-button">共有・コピーする</button>
           <button type="button" id="email-submission" class="secondary-button">メールで送る</button>
-          <button type="button" id="open-github-issue" class="ghost-button">管理者向けGitHub Issue</button>
+          <button type="button" id="open-github-issue" class="primary-button">GitHub Issueで自動反映する</button>
         </div>
       </form>
     </dialog>

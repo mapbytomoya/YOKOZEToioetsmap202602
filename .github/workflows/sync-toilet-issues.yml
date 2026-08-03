@@ -1,0 +1,97 @@
+name: トイレIssueを確認待ち地図へ自動反映
+
+on:
+  issues:
+    types: [opened, edited, reopened, closed]
+
+concurrency:
+  group: submitted-toilets
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: startsWith(github.event.issue.title, '[トイレ情報提供]') || startsWith(github.event.issue.title, '横瀬町トイレ情報')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pages: write
+      id-token: write
+    outputs:
+      changed: ${{ steps.diff.outputs.changed }}
+    steps:
+      - name: リポジトリを取得
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: 変換処理を自己テスト
+        run: python3 scripts/issue_to_submitted_geojson.py --self-test
+
+      - name: Issueを確認待ちGeoJSONへ同期
+        id: convert
+        env:
+          EVENT_PATH: ${{ github.event_path }}
+        run: |
+          set +e
+          python3 scripts/issue_to_submitted_geojson.py \
+            --event "$EVENT_PATH" \
+            --output data/submitted/submitted_toilets.geojson \
+            --message-out /tmp/toilet-intake-message.txt
+          exit_code=$?
+          if [ "$exit_code" -eq 0 ]; then
+            echo "valid=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "valid=false" >> "$GITHUB_OUTPUT"
+          fi
+          exit 0
+
+      - name: 入力エラーをIssueへ通知
+        if: steps.convert.outputs.valid == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+        run: gh issue comment "$ISSUE_URL" --body-file /tmp/toilet-intake-message.txt
+
+      - name: GeoJSONの変更を確認
+        id: diff
+        run: |
+          if git diff --quiet -- data/submitted/submitted_toilets.geojson; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 確認待ちデータを保存
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/submitted/submitted_toilets.geojson
+          git commit -m "Update submitted toilets from issue #${{ github.event.issue.number }} [skip ci]"
+          git push
+
+      - name: GitHub Pagesを設定
+        if: steps.diff.outputs.changed == 'true'
+        uses: actions/configure-pages@v5
+
+      - name: サイト一式をアップロード
+        if: steps.diff.outputs.changed == 'true'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: .
+
+  deploy:
+    if: needs.sync.outputs.changed == 'true'
+    needs: sync
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: GitHub Pagesへ反映
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,6 +1,7 @@
 const OSM_CANDIDATES_DATA_URL = "../data/reference/osm_toilet_candidates.geojson";
+const SUBMITTED_DATA_URL = "../data/submitted/submitted_toilets.geojson";
 const VERIFIED_DATA_URL = "../data/verified/YOKOZEatlas2026_verified_toilets_v0.1.0.geojson";
-const ISSUE_URL = "https://github.com/furuhashilab/YOKOZEatlas2026/issues/new";
+const ISSUE_URL = "https://github.com/mapbytomoya/YOKOZEToioetsmap202602/issues/new";
 const SUBMISSION_EMAIL = "";
 const YOKOZE_BOUNDS = [
   [139.03, 35.94],
@@ -57,6 +58,7 @@ const BASEMAPS = {
 const DATA_ATTRIBUTION = [
   "<a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">© OpenStreetMap contributors</a>",
   "OSMトイレ参考候補データ: ODbL 1.0",
+  "GitHub Issue確認待ちデータ: CC0未収録",
   "YOKOZE Atlas確認済みデータ: CC0 1.0"
 ];
 
@@ -92,7 +94,13 @@ const labels = {
   field_survey: "現地調査",
   user_submission: "利用者による情報提供",
   atlas: "YOKOZE Atlasへ確認情報を提供",
-  atlas_and_osm: "YOKOZE Atlasへ提供し、OpenStreetMapにも追加"
+  atlas_and_osm: "YOKOZE Atlasへ提供し、OpenStreetMapへ匿名メモも残す",
+  atlas_and_osm_note: "YOKOZE Atlasへ提供し、OpenStreetMapへ匿名メモも残す",
+  flush: "水洗",
+  non_flush: "非水洗",
+  western: "洋式",
+  japanese: "和式",
+  both: "洋式・和式あり"
 };
 const wheelchairLabels = {
   yes: "利用しやすい",
@@ -122,6 +130,7 @@ let currentBasemap = "osm";
 let currentWheelchairFilter = "all";
 let attributionControl;
 let referenceDataCache;
+let submittedDataCache;
 let verifiedDataCache;
 let importedGeoJsonData;
 let importedSvgMarkerElement;
@@ -198,6 +207,14 @@ function buildOsmEditUrl(osmId, latitude, longitude) {
   return `https://www.openstreetmap.org/edit?editor=id#map=19/${fallbackLat}/${fallbackLng}`;
 }
 
+function buildOsmNoteUrl(latitude, longitude) {
+  const lat = Number(latitude);
+  const lng = Number(longitude);
+  const fallbackLat = Number.isFinite(lat) ? lat : YOKOZE_VIEW.center[1];
+  const fallbackLng = Number.isFinite(lng) ? lng : YOKOZE_VIEW.center[0];
+  return `https://www.openstreetmap.org/note/new#map=19/${fallbackLat}/${fallbackLng}&layers=N`;
+}
+
 function getOsmOriginalTags(properties) {
   if (typeof properties?.osm_original_tags_json === "string") {
     try {
@@ -236,8 +253,9 @@ function setStatus(message, isError = false) {
   target.classList.toggle("error-message", isError);
 }
 
-function updateParticipationCounts(referenceCount, verifiedCount) {
+function updateParticipationCounts(referenceCount, submittedCount, verifiedCount) {
   $("#reference-count").textContent = String(referenceCount);
+  $("#submitted-count").textContent = String(submittedCount);
   $("#verified-count").textContent = String(verifiedCount);
 }
 
@@ -305,7 +323,7 @@ async function switchBasemap(nextBasemap) {
   map.once("style.load", async () => {
     updateAttributionControl();
     await restoreOverlays();
-    setStatus(`背景地図: ${BASEMAPS[currentBasemap].label}。reference ${referenceDataCache?.features.length || 0}件、verified ${verifiedDataCache?.features.length || 0}件。`);
+    setStatus(`背景地図: ${BASEMAPS[currentBasemap].label}。reference ${referenceDataCache?.features.length || 0}件、submitted ${submittedDataCache?.features.length || 0}件、verified ${verifiedDataCache?.features.length || 0}件。`);
   });
 }
 
@@ -325,18 +343,24 @@ async function loadJson(url) {
 async function loadToiletLayers() {
   setStatus("トイレ候補データを読み込んでいます。");
   try {
-    if (!referenceDataCache || !verifiedDataCache) {
-      const [osmCandidateData, verifiedData] = await Promise.all([
+    if (!referenceDataCache || !submittedDataCache || !verifiedDataCache) {
+      const [osmCandidateData, submittedData, verifiedData] = await Promise.all([
         loadJson(OSM_CANDIDATES_DATA_URL),
+        loadJson(SUBMITTED_DATA_URL),
         loadJson(VERIFIED_DATA_URL)
       ]);
       referenceDataCache = normalizeOsmCandidates(osmCandidateData);
+      submittedDataCache = normalizePointCollection(submittedData);
       verifiedDataCache = normalizePointCollection(verifiedData);
     }
     addPointLayer("reference-toilets", referenceDataCache, "OSM参考", "layer-osm-reference");
+    addPointLayer("submitted-toilets", submittedDataCache, "確認待ち", "layer-submitted", {
+      circleColor: "#3478c0",
+      circleRadius: 9
+    });
     addPointLayer("verified-toilets", verifiedDataCache, "確認済み", "layer-verified");
-    const total = referenceDataCache.features.length + verifiedDataCache.features.length;
-    updateParticipationCounts(referenceDataCache.features.length, verifiedDataCache.features.length);
+    const total = referenceDataCache.features.length + submittedDataCache.features.length + verifiedDataCache.features.length;
+    updateParticipationCounts(referenceDataCache.features.length, submittedDataCache.features.length, verifiedDataCache.features.length);
     setStatus(`地域データ候補 ${total}件を表示しています。未確認地点を選ぶと、更新に参加できます。`);
     fitInitialReferenceBounds();
   } catch (error) {
@@ -443,7 +467,7 @@ function setWheelchairFilter(value) {
   pointLayerGroupIds.forEach(applyPointLayerFilter);
 }
 
-function addPointLayer(id, data, shortLabel, visibilityCheckboxId) {
+function addPointLayer(id, data, shortLabel, visibilityCheckboxId, options = {}) {
   pointLayerGroupIds.add(id);
   if (map.getSource(id)) {
     map.getSource(id).setData(data);
@@ -462,8 +486,8 @@ function addPointLayer(id, data, shortLabel, visibilityCheckboxId) {
     type: "circle",
     source: id,
     paint: {
-      "circle-color": wheelchairColorExpression,
-      "circle-radius": [
+      "circle-color": options.circleColor || wheelchairColorExpression,
+      "circle-radius": options.circleRadius || [
         "match",
         ["get", "wheelchair_status"],
         "yes", 10,
@@ -613,7 +637,9 @@ function createPopupContent(feature) {
     ? "OpenStreetMap参考データ｜ライセンス：ODbL 1.0｜YOKOZE AtlasのCC0公開データではありません"
     : status === "verified"
       ? "YOKOZE Atlas確認済みデータ｜ライセンス：CC0 1.0"
-      : "提供・取込データ｜管理者確認前・自動公開されません";
+      : status === "submitted"
+        ? "GitHub Issueから自動反映｜確認待ち・CC0未収録"
+        : "取込プレビュー｜正式データには自動追加されません";
   wrapper.append(licenseNotice);
 
   const rows = [
@@ -630,7 +656,10 @@ function createPopupContent(feature) {
     ["車いす対応", getWheelchairLabel(wheelchairStatus)],
     ["おむつ交換台", toDisplay(properties.changing_table)],
     ["オストメイト設備", toDisplay(properties.ostomy)],
-    ["排水方式", toDisplay(properties["toilets:disposal"])],
+    ["水洗方式", toDisplay(properties.flush_type || properties["toilets:disposal"])],
+    ["便器の形式", toDisplay(properties.toilet_style)],
+    ["外観・入口", toDisplay(properties.exterior_note)],
+    ["その他の設備・特徴", toDisplay(properties.equipment_note)],
     ["緯度", toDisplay(Number(coordinates[1]).toFixed(6))],
     ["経度", toDisplay(Number(coordinates[0]).toFixed(6))],
     ["最終確認日", toDisplay(properties.verification_date)],
@@ -641,6 +670,7 @@ function createPopupContent(feature) {
     ["データライセンス", toDisplay(properties.data_license)],
     ["CC0収録可否", toDisplay(properties.cc0_eligible)],
     ["現地確認", toDisplay(properties.field_surveyed)],
+    ["GitHub Issue", toDisplay(properties.source_issue_number)],
     ["重複可能性", toDisplay(properties.duplicate_note)]
   ];
 
@@ -684,7 +714,7 @@ function createPopupContent(feature) {
     link.href = properties.source_url;
     link.target = "_blank";
     link.rel = "noopener noreferrer";
-    link.textContent = "公式情報を開く";
+    link.textContent = properties.source_issue_number ? "元のGitHub Issueを開く" : "情報源を開く";
     wrapper.append(link);
   }
 
@@ -731,8 +761,11 @@ function clearOsmReferenceContext() {
 function setSubmissionMode(type) {
   const isExisting = type === "edit_existing";
   $("#submission-type").value = isExisting ? "edit_existing" : "new";
-  $("#submission-type-label").textContent = isExisting ? "既存OSM地点の確認情報" : "新しいトイレ情報";
-  $("#form-title").textContent = isExisting ? "確認した情報を提供する" : "新しいトイレ情報を提供する";
+  $("#submission-type-label").textContent = isExisting ? "既存OSM地点の確認情報" : "新しいトイレ地点";
+  $("#form-title").textContent = isExisting ? "確認した情報を提供する" : "新しいトイレ地点を登録する";
+  $("#pick-position").textContent = isExisting
+    ? "地図をクリックして確認位置を指定"
+    : "地図をクリックして新しいピンを置く";
   $("#new-destination-options").hidden = isExisting;
 }
 
@@ -744,7 +777,7 @@ function resetSubmissionContext() {
   $("#position-help").textContent = "地図上で確認した位置を選びます。仮マーカーはドラッグで移動できます。";
   $("#form-error").hidden = true;
   $("#submission-status").hidden = true;
-  updateNewOsmEditLink();
+  updateNewOsmNoteLink();
 }
 
 function openEditSubmission(feature) {
@@ -800,12 +833,12 @@ function getSubmissionDestination() {
   return document.querySelector('input[name="submissionDestination"]:checked')?.value || "atlas";
 }
 
-function updateNewOsmEditLink() {
+function updateNewOsmNoteLink() {
   const isNew = $("#submission-type").value === "new";
-  const wantsOsm = getSubmissionDestination() === "atlas_and_osm";
-  const panel = $("#new-osm-link-panel");
-  const link = $("#new-osm-edit-link");
-  const status = $("#new-osm-link-status");
+  const wantsOsm = ["atlas_and_osm", "atlas_and_osm_note"].includes(getSubmissionDestination());
+  const panel = $("#new-osm-note-panel");
+  const link = $("#new-osm-note-link");
+  const status = $("#new-osm-note-status");
   panel.hidden = !isNew || !wantsOsm;
   if (panel.hidden) return;
 
@@ -815,7 +848,7 @@ function updateNewOsmEditLink() {
   link.hidden = !hasPosition;
   status.hidden = hasPosition;
   if (hasPosition) {
-    link.href = buildOsmEditUrl("", lat, lng);
+    link.href = buildOsmNoteUrl(lat, lng);
   } else {
     link.removeAttribute("href");
     status.textContent = "先に地図で追加地点を選んでください。";
@@ -845,7 +878,7 @@ function setDraftPosition(lng, lat, moveMap = false) {
   }
 
   updatePositionWarning();
-  updateNewOsmEditLink();
+  updateNewOsmNoteLink();
   if (moveMap) map.easeTo({ center: lngLat, duration: 300 });
 }
 
@@ -884,6 +917,10 @@ function getFormDataObject() {
     purchaseNote: safeText($("#purchase-note").value, 120) || "unknown",
     permissionNote: safeText($("#permission-note").value, 120) || "unknown",
     toiletHours: safeText($("#toilet-hours").value, 80) || "unknown",
+    exteriorNote: safeText($("#exterior-note").value, 240) || "unknown",
+    flushType: $("#flush-type").value || "unknown",
+    toiletStyle: $("#toilet-style").value || "unknown",
+    equipmentNote: safeText($("#equipment-note").value, 320) || "unknown",
     wheelchair: $("#wheelchair").value || "unknown",
     changingTable: $("#changing-table").value || "unknown",
     ostomy: $("#ostomy").value || "unknown",
@@ -956,6 +993,10 @@ ${osmBlock}## 利用条件
 
 ## 設備
 
+- 外観・入口: ${markdownValue(data.exteriorNote)}
+- 水洗方式: ${markdownValue(data.flushType)}
+- 便器の形式: ${markdownValue(data.toiletStyle)}
+- その他の設備・特徴: ${markdownValue(data.equipmentNote)}
 - 車いす対応: ${markdownValue(data.wheelchair)}
 - おむつ交換台: ${markdownValue(data.changingTable)}
 - オストメイト設備: ${markdownValue(data.ostomy)}
@@ -973,17 +1014,19 @@ ${osmBlock}## 利用条件
 - CC0 1.0での公開に同意: はい
 - 他の地図サービス等からコピーしていない: はい
 
-## 管理者確認メモ
+## 自動反映と確認メモ
 
-- 情報提供直後は地図へ自動表示しない
-- 確認後にのみ \`data/verified/\` のCC0用GeoJSONへ追加する
+- GitHub Actionsが入力形式と座標を検査する
+- 有効なIssueは \`submitted\`（青色・確認待ち）として地図へ自動表示する
+- Issueを閉じると確認待ちレイヤーから自動的に外れる
+- \`verified\` とCC0公開への移行は、権利と内容を別途確認して行う
 - 既存地点の確認・修正の場合、OSM座標と提供者確認座標を分けて確認する
 - Google Maps等からの転用がないか確認する`;
 }
 
 function buildSubmissionTitle(data) {
-  const titlePrefix = data.submissionType === "edit_existing" ? "トイレ情報確認・修正" : "トイレ情報提供";
-  return `横瀬町${titlePrefix}: ${data.facilityName}`;
+  const titlePrefix = data.submissionType === "edit_existing" ? "確認・修正" : "新規地点";
+  return `[トイレ情報提供] ${titlePrefix}: ${data.facilityName}`;
 }
 
 function buildSubmissionText(data) {
@@ -1043,6 +1086,10 @@ function buildDraftFeature(data) {
       facility_opening_hours: "unknown",
       toilet_opening_hours: data.toiletHours,
       fee: "unknown",
+      exterior_note: data.exteriorNote,
+      flush_type: data.flushType,
+      toilet_style: data.toiletStyle,
+      equipment_note: data.equipmentNote,
       wheelchair: data.wheelchair,
       changing_table: data.changingTable,
       ostomy: data.ostomy,
@@ -1278,7 +1325,7 @@ function bindUi() {
     setWheelchairFilter(event.target.value);
   });
   document.querySelectorAll('input[name="submissionDestination"]').forEach((radio) => {
-    radio.addEventListener("change", updateNewOsmEditLink);
+    radio.addEventListener("change", updateNewOsmNoteLink);
   });
   document.querySelectorAll("[data-close-dialog]").forEach((button) => {
     button.addEventListener("click", () => closeDialog(button));
@@ -1290,6 +1337,10 @@ function bindUi() {
 
   $("#layer-osm-reference").addEventListener("change", (event) => {
     setLayerGroupVisibility("reference-toilets", event.target.checked);
+  });
+
+  $("#layer-submitted").addEventListener("change", (event) => {
+    setLayerGroupVisibility("submitted-toilets", event.target.checked);
   });
 
   $("#layer-verified").addEventListener("change", (event) => {
@@ -1318,7 +1369,7 @@ function bindUi() {
         setDraftPosition(lng, lat, true);
       } else {
         updatePositionWarning();
-        updateNewOsmEditLink();
+        updateNewOsmNoteLink();
       }
     });
   });

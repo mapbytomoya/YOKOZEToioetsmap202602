@@ -455,9 +455,19 @@ h4 {
   color: #9a6415;
 }
 
+.submitted-stat {
+  background: #eef5fc;
+  border-color: #b8d2ec;
+}
+
+.submitted-stat strong {
+  color: var(--submitted);
+}
+
 .verified-stat {
   background: #edf7f5;
   border-color: #acd3cc;
+  grid-column: 1 / -1;
 }
 
 .verified-stat strong {
@@ -900,6 +910,16 @@ button:focus-visible,
   margin: 0;
 }
 
+.draft-pin-note {
+  background: #eef6f2;
+  border: 1px solid #b9d7ca;
+  border-radius: 6px;
+  color: var(--ink);
+  font-size: 13px;
+  margin: 0;
+  padding: 10px 11px;
+}
+
 .new-osm-link-panel {
   border-top: 1px solid var(--line);
   display: grid;
@@ -997,6 +1017,11 @@ button:focus-visible,
 .popup-license.reference {
   background: #fff8ec;
   border-color: #edcc95;
+}
+
+.popup-license.submitted {
+  background: #eef5fc;
+  border-color: #b8d2ec;
 }
 
 .popup-license.verified {
@@ -1198,6 +1223,10 @@ button:focus-visible,
   }
 
   .reference-tags-row {
+    grid-column: auto;
+  }
+
+  .verified-stat {
     grid-column: auto;
   }
 

@@ -1,45 +1,46 @@
-name: トイレ情報投稿
-description: サイト内フォームが使えない場合の代替投稿手段です。
-title: "[トイレ情報投稿] "
+name: トイレ情報を提供する
+description: 確認したトイレ情報を、地図の確認待ちレイヤーへ提供します。
+title: "[トイレ情報提供] "
 labels:
   - data
 body:
   - type: markdown
     attributes:
       value: |
-        横瀬町トイレアクセスマップへの情報提供フォームです。投稿内容はすぐに正式データにはならず、管理者・ゼミ生による確認後にのみCC0公開データへ追加されます。
-        OpenStreetMap参考情報はODbLであり、このフォームの入力へ自動転記しません。OSMを更新する場合はOpenStreetMap上で編集してください。
-        Google Maps、Google検索結果、口コミ、写真など、他サービスからコピーした情報は投稿しないでください。
+        提供内容はGitHub Actionsが形式と座標を検査し、青い `submitted`（確認待ち）ピンとして地図へ自動反映します。
+        この段階では確認済みCC0データではありません。Issueを閉じると確認待ちレイヤーから自動的に外れます。
+        新しいトイレをOpenStreetMapへ知らせる場合は、Web地図の「OSMへ匿名メモを残す」も利用できます。
+        Google Maps、検索結果、口コミ、写真など、他サービスから情報をコピーしないでください。
+
   - type: dropdown
     id: submission_type
     attributes:
       label: 情報提供の種類
-      options:
-        - new
-        - edit_existing
+      options: [new, edit_existing]
       description: newは新しい地点、edit_existingは既存OSM参考地点について確認した情報です。
     validations:
       required: true
+
   - type: dropdown
     id: submission_destination
     attributes:
       label: 希望する更新経路
-      options:
-        - atlas
-        - atlas_and_osm
-      description: atlas_and_osmを選んでもOSMへ自動投稿されません。OpenStreetMap上で別途編集・保存してください。
+      options: [atlas, atlas_and_osm_note]
+      description: atlas_and_osm_noteを選んだ場合もOSMへ自動書き込みはしません。Web地図から匿名メモを別途残します。
     validations:
       required: true
+
   - type: input
     id: source_osm_id
     attributes:
-      label: 参考にしたOSM ID（任意）
+      label: OSM ID
       description: 既存OSM参考地点の場合のみ、node/123、way/123、relation/123の形式で入力します。
+
   - type: input
     id: source_osm_name
     attributes:
-      label: 参照時点のOSM上の名称（任意）
-      description: 投稿者が確認した施設名とは分けて記録します。
+      label: OSM上の名称
+
   - type: input
     id: facility_name
     attributes:
@@ -47,22 +48,15 @@ body:
       description: トイレがある施設名または場所の名前
     validations:
       required: true
+
   - type: dropdown
     id: category
     attributes:
       label: 施設種別
-      options:
-        - public_toilet
-        - park
-        - station
-        - public_facility
-        - tourism
-        - convenience
-        - cafe
-        - restaurant
-        - other
+      options: [public_toilet, park, station, public_facility, tourism, convenience, cafe, restaurant, other]
     validations:
       required: true
+
   - type: input
     id: latitude
     attributes:
@@ -70,6 +64,7 @@ body:
       placeholder: "35.989121"
     validations:
       required: true
+
   - type: input
     id: longitude
     attributes:
@@ -77,113 +72,129 @@ body:
       placeholder: "139.106441"
     validations:
       required: true
+
   - type: dropdown
     id: toilet_exists
     attributes:
       label: トイレの存在
-      options:
-        - unknown
-        - yes
-        - no
+      options: [unknown, yes, no]
     validations:
       required: true
+
   - type: dropdown
     id: access
     attributes:
-      label: 一般利用条件
-      options:
-        - unknown
-        - public
-        - customers
-        - permission
-        - restricted
+      label: 一般利用の可否
+      options: [unknown, public, customers, permission, restricted]
     validations:
       required: true
+
+  - type: input
+    id: purchase_note
+    attributes:
+      label: 商品購入・施設利用の必要性
+      placeholder: unknown
+
+  - type: input
+    id: permission_note
+    attributes:
+      label: 職員や店員への声掛けの必要性
+      placeholder: unknown
+
   - type: input
     id: opening_hours
     attributes:
-      label: 利用時間
-      description: 不明な場合は unknown と入力してください。
-      placeholder: "unknown"
+      label: トイレの利用可能時間・営業時間
+      placeholder: "例：8:30〜17:30、24時間、unknown"
+
+  - type: textarea
+    id: exterior_note
+    attributes:
+      label: 外観・入口の特徴
+      description: 建物の外観、入口の向き、段差など。未確認ならunknown。
+
+  - type: dropdown
+    id: flush_type
+    attributes:
+      label: 水洗方式
+      options: [unknown, flush, non_flush, other]
+
+  - type: dropdown
+    id: toilet_style
+    attributes:
+      label: 便器の形式
+      options: [unknown, western, japanese, both, other]
+
+  - type: textarea
+    id: equipment_note
+    attributes:
+      label: その他の設備・特徴
+      description: 手すり、子ども用便座、荷物台、入口の段差など。
+
   - type: dropdown
     id: wheelchair
     attributes:
       label: 車いす対応
-      options:
-        - unknown
-        - yes
-        - no
-        - limited
+      options: [unknown, yes, limited, no]
     validations:
       required: true
+
   - type: dropdown
     id: changing_table
     attributes:
       label: おむつ交換台
-      options:
-        - unknown
-        - yes
-        - no
+      options: [unknown, yes, no]
     validations:
       required: true
+
   - type: dropdown
     id: ostomy
     attributes:
       label: オストメイト設備
-      options:
-        - unknown
-        - yes
-        - no
+      options: [unknown, yes, no]
     validations:
       required: true
+
   - type: dropdown
     id: gender
     attributes:
       label: 男女別・共用
-      options:
-        - unknown
-        - male
-        - female
-        - unisex
-        - mixed
+      options: [unknown, male, female, unisex, mixed]
     validations:
       required: true
+
   - type: input
     id: verification_date
     attributes:
-      label: 確認日
-      placeholder: "2026-08-02"
-    validations:
-      required: true
+      label: 情報を確認した日
+      placeholder: "2026-08-03"
+
   - type: dropdown
     id: verification_method
     attributes:
       label: 確認方法
-      options:
-        - user_submission
-        - field_survey
-        - phone
-        - email
-        - official_web
-        - unknown
+      options: [user_submission, field_survey, phone, email, official_web, unknown]
     validations:
       required: true
+
   - type: input
     id: source
     attributes:
       label: 情報源
-      description: 自分で確認した内容、施設管理者への確認、公式ページなど。Google Maps等のコピーは不可です。
+      description: 自分で確認、施設管理者への確認、公式ページなど。
+
   - type: textarea
     id: notes
     attributes:
       label: 備考
-      description: 個人情報、顔写真、車両ナンバー、私有地内部の情報は投稿しないでください。
+      description: 個人情報、顔写真、車両ナンバー、私有地内部の情報は入力しないでください。
+
   - type: checkboxes
     id: license_agreement
     attributes:
-      label: ライセンス同意
+      label: CC0での公開に同意します
       options:
-        - label: 投稿した位置・施設・設備等の情報を、自分で確認した情報として提供し、YOKOZE AtlasがCC0 1.0で公開することに同意します。
+        - label: 提供した位置・施設・設備等の情報を、自分で確認した情報として提供し、YOKOZE AtlasがCC0 1.0で公開することに同意します。
           required: true
         - label: Google Mapsなど他の地図サービス、検索結果、口コミ、写真等からコピーした情報ではありません。
           required: true

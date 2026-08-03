@@ -126,6 +126,8 @@ const wheelchairColorExpression = [
 let map;
 let draftMarker;
 let pickingPosition = false;
+let selectedUpdateKind = null;
+let pendingMapAction = null;
 let currentBasemap = "osm";
 let currentWheelchairFilter = "all";
 let attributionControl;
@@ -285,6 +287,18 @@ function initMap() {
   });
 
   map.on("click", (event) => {
+    if (pendingMapAction?.kind === "new") {
+      const { method } = pendingMapAction;
+      clearPendingMapAction();
+      const targetUrl = method === "osm_edit"
+        ? buildOsmEditUrl("", event.lngLat.lat, event.lngLat.lng)
+        : buildOsmNoteUrl(event.lngLat.lat, event.lngLat.lng);
+      window.open(targetUrl, "_blank", "noopener");
+      setStatus(method === "osm_edit"
+        ? "選択位置をOpenStreetMap編集画面で開きました。"
+        : "選択位置をOpenStreetMapメモ画面で開きました。");
+      return;
+    }
     if (!pickingPosition) return;
     setDraftPosition(event.lngLat.lng, event.lngLat.lat, true);
     pickingPosition = false;
@@ -524,18 +538,24 @@ function addPointLayer(id, data, shortLabel, visibilityCheckboxId, options = {})
     interactiveLayerIds.add(id);
     map.on("click", `${id}-circle`, (event) => {
       const feature = event.features[0];
+      if (pendingMapAction) {
+        if (pendingMapAction.kind === "existing") {
+          runExistingPointAction(feature, pendingMapAction.method);
+        }
+        return;
+      }
       const coordinates = feature.geometry.coordinates.slice();
-      new maplibregl.Popup()
+      new maplibregl.Popup({ maxWidth: "760px" })
         .setLngLat(coordinates)
         .setDOMContent(createPopupContent(feature))
         .addTo(map);
     });
 
     map.on("mouseenter", `${id}-circle`, () => {
-      map.getCanvas().style.cursor = "pointer";
+      map.getCanvas().style.cursor = pendingMapAction ? "crosshair" : "pointer";
     });
     map.on("mouseleave", `${id}-circle`, () => {
-      map.getCanvas().style.cursor = "";
+      map.getCanvas().style.cursor = pendingMapAction ? "crosshair" : "";
     });
   }
 }
@@ -569,12 +589,28 @@ function createReferenceUpdatePanel(feature, osmId, coordinates) {
   osmAccountNote.textContent = "更新内容はODbLで共有されます";
   osmChoice.append(osmHeading, osmDescription, osmEditLink, osmAccountNote);
 
+  const noteChoice = document.createElement("section");
+  noteChoice.className = "popup-choice note-choice";
+  const noteHeading = document.createElement("h4");
+  noteHeading.textContent = "OpenStreetMapへメモ";
+  const noteDescription = document.createElement("p");
+  noteDescription.textContent = "不足情報や確認事項を地域のマッパーへ伝えます。";
+  const noteLink = document.createElement("a");
+  noteLink.className = "secondary-button popup-action";
+  noteLink.href = buildOsmNoteUrl(coordinates[1], coordinates[0]);
+  noteLink.target = "_blank";
+  noteLink.rel = "noopener noreferrer";
+  noteLink.textContent = "⌖ OSMメモを残す";
+  const noteAccountNote = document.createElement("small");
+  noteAccountNote.textContent = "アカウント不要・マッパーが確認";
+  noteChoice.append(noteHeading, noteDescription, noteLink, noteAccountNote);
+
   const atlasChoice = document.createElement("section");
   atlasChoice.className = "popup-choice atlas-choice";
   const atlasHeading = document.createElement("h4");
   atlasHeading.textContent = "確認した情報を提供";
   const atlasDescription = document.createElement("p");
-  atlasDescription.textContent = "現地確認や施設への問い合わせで確認した内容を提供します。確認後にCC0データへ追加されます。";
+  atlasDescription.textContent = "確認した内容をGitHub Issueで送り、青い確認待ちピンへ自動反映します。";
   const provideButton = document.createElement("button");
   provideButton.type = "button";
   provideButton.className = "primary-button popup-action";
@@ -583,10 +619,10 @@ function createReferenceUpdatePanel(feature, osmId, coordinates) {
     openEditSubmission(feature);
   });
   const atlasLoginNote = document.createElement("small");
-  atlasLoginNote.textContent = "下書き作成はログイン不要・管理者確認後に公開";
+  atlasLoginNote.textContent = "GitHubログインが必要・CC0確認済みへの昇格は別工程";
   atlasChoice.append(atlasHeading, atlasDescription, provideButton, atlasLoginNote);
 
-  actionGroup.append(osmChoice, atlasChoice);
+  actionGroup.append(osmChoice, noteChoice, atlasChoice);
   panel.append(heading, lead, actionGroup);
   return panel;
 }
@@ -734,6 +770,71 @@ function closeDialog(button) {
   if (dialog) dialog.close();
 }
 
+function clearPendingMapAction() {
+  pendingMapAction = null;
+  if (map?.getCanvas()) map.getCanvas().style.cursor = "";
+}
+
+function resetUpdateRouter() {
+  selectedUpdateKind = null;
+  $("#update-kind-step").hidden = false;
+  $("#update-method-step").hidden = true;
+  $("#update-route-help").textContent = "";
+}
+
+function showUpdateMethods(kind) {
+  selectedUpdateKind = kind === "existing" ? "existing" : "new";
+  $("#selected-update-kind").textContent = selectedUpdateKind === "new"
+    ? "新しいトイレ"
+    : "既存のトイレ";
+  $("#update-route-help").textContent = selectedUpdateKind === "new"
+    ? "OSMの2経路は次に地図上の新しい位置を選びます。GitHub Issueは詳しい情報入力へ進みます。"
+    : "更新方法を選んだ後、地図上の既存ピンを選びます。";
+  $("#update-kind-step").hidden = true;
+  $("#update-method-step").hidden = false;
+}
+
+function beginMapAction(kind, method) {
+  pendingMapAction = { kind, method };
+  $("#update-route-dialog").close();
+  map.getCanvas().style.cursor = "crosshair";
+  setStatus(kind === "new"
+    ? "地図上で新しいトイレの位置をクリックしてください。"
+    : "地図上で編集したい既存トイレのピンを選んでください。");
+}
+
+function startUpdateMethod(method) {
+  if (!selectedUpdateKind || !["osm_edit", "osm_note", "github_issue"].includes(method)) return;
+  if (selectedUpdateKind === "new" && method === "github_issue") {
+    $("#update-route-dialog").close();
+    resetSubmissionContext();
+    openDialog($("#submission-dialog"));
+    return;
+  }
+  beginMapAction(selectedUpdateKind, method);
+}
+
+function runExistingPointAction(feature, method) {
+  const properties = feature.properties || {};
+  const coordinates = feature.geometry?.coordinates || [properties.longitude, properties.latitude];
+  const osmId = properties.osm_id || properties["@id"] || feature.id || "";
+  clearPendingMapAction();
+
+  if (method === "github_issue") {
+    openEditSubmission(feature);
+    setStatus("既存地点の確認情報入力を開きました。");
+    return;
+  }
+
+  const targetUrl = method === "osm_edit"
+    ? buildOsmEditUrl(osmId, coordinates[1], coordinates[0])
+    : buildOsmNoteUrl(coordinates[1], coordinates[0]);
+  window.open(targetUrl, "_blank", "noopener");
+  setStatus(method === "osm_edit"
+    ? "選択した既存地点をOpenStreetMap編集画面で開きました。"
+    : "選択した既存地点をOpenStreetMapメモ画面で開きました。");
+}
+
 function clearDraftMarker() {
   if (draftMarker) draftMarker.remove();
   draftMarker = null;
@@ -766,7 +867,7 @@ function setSubmissionMode(type) {
   $("#pick-position").textContent = isExisting
     ? "地図をクリックして確認位置を指定"
     : "地図をクリックして新しいピンを置く";
-  $("#new-destination-options").hidden = isExisting;
+  $("#new-destination-options").hidden = true;
 }
 
 function resetSubmissionContext() {
@@ -1313,10 +1414,19 @@ function clearImports() {
 }
 
 function bindUi() {
-  $("#open-form").addEventListener("click", () => {
-    resetSubmissionContext();
-    openDialog($("#submission-dialog"));
+  $("#open-update-router").addEventListener("click", () => {
+    pickingPosition = false;
+    clearPendingMapAction();
+    resetUpdateRouter();
+    openDialog($("#update-route-dialog"));
   });
+  document.querySelectorAll("[data-update-kind]").forEach((button) => {
+    button.addEventListener("click", () => showUpdateMethods(button.dataset.updateKind));
+  });
+  document.querySelectorAll("[data-update-method]").forEach((button) => {
+    button.addEventListener("click", () => startUpdateMethod(button.dataset.updateMethod));
+  });
+  $("#back-to-update-kind").addEventListener("click", resetUpdateRouter);
   $("#open-import").addEventListener("click", () => openDialog($("#import-dialog")));
   $("#basemap-select").addEventListener("change", (event) => {
     switchBasemap(event.target.value);
